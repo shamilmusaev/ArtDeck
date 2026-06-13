@@ -158,10 +158,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
             html = f.read()
         try:
             ver = str(int(max(os.path.getmtime(os.path.join(WEBDIR, x))
-                              for x in ("style.css", "app.js"))))
+                              for x in ("style.css", "app.js", "i18n.js"))))
         except OSError:
             ver = "0"
         html = (html.replace('href="style.css"', 'href="style.css?v=%s"' % ver)
+                    .replace('src="i18n.js"', 'src="i18n.js?v=%s"' % ver)
                     .replace('src="app.js"', 'src="app.js?v=%s"' % ver))
         body = html.encode("utf-8")
         self.send_response(200)

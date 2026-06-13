@@ -1,4 +1,5 @@
 "use strict";
+/* ArtDeck — фронтенд. Чистый vanilla, без сборки. Зовёт локальный JSON-API. */
 
 const SVG = (b)=>`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${b}</svg>`;
 const ICONS = {
@@ -8,213 +9,265 @@ const ICONS = {
   logo:   SVG(`<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>`),
   icon:   SVG(`<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/>`),
 };
-const KEY_ICON = SVG(`<path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/>`);
+const GAME_PH = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M7 12h3M8.5 10.5v3"/><circle cx="15.5" cy="11" r="1"/><circle cx="17.5" cy="13" r="1"/></svg>`;
+const PEEK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
 
 const TYPES = [
-  {id:"cover",  title:"Обложка", ar:"2/3",    w:160, fit:"cover"},
-  {id:"banner", title:"Баннер",  ar:"460/215", w:250, fit:"cover"},
-  {id:"hero",   title:"Hero",    ar:"96/31",  w:320, fit:"cover"},
-  {id:"logo",   title:"Logo",    ar:"3/2",    w:200, fit:"contain"},
-  {id:"icon",   title:"Icon",    ar:"1/1",    w:104, fit:"contain"},
+  {id:"cover",  ar:"2/3",     w:170, fit:"cover"},
+  {id:"banner", ar:"460/215", w:260, fit:"cover"},
+  {id:"hero",   ar:"96/31",   w:340, fit:"cover"},
+  {id:"logo",   ar:"3/2",     w:210, fit:"contain"},
+  {id:"icon",   ar:"1/1",     w:108, fit:"contain"},
 ];
 const TYPE = Object.fromEntries(TYPES.map(t=>[t.id,t]));
+const STATUS_ORDER = ["cover","banner","hero","logo","icon"];
 
 const state = {
-  account:null, games:[], selected:null, gameId:null,
-  matchName:null, type:"cover", candidates:[], reqToken:0,
+  accounts:[], account:null, source:"shortcut",
+  games:[], selected:null, gameId:null, matchName:null,
+  type:"cover", animated:false, candidates:[], selectedArt:null,
+  reqToken:0, keyOk:false,
 };
 
-const $ = s=>document.querySelector(s);
+const $  = s=>document.querySelector(s);
 const el = (tag,cls,html)=>{const e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e;};
 async function jget(u){const r=await fetch(u); if(!r.ok) throw new Error((await r.json().catch(()=>({error:r.status}))).error||r.status); return r.json();}
 async function jpost(u,b){const r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}); return r.json();}
+const enc = encodeURIComponent;
 
-/* ---------- init ---------- */
+/* ---------------- i18n статика ---------------- */
+function applyStatic(){
+  document.querySelectorAll("[data-i18n]").forEach(e=>{ e.textContent = t(e.dataset.i18n); });
+  $("#filter").placeholder = t("filter_games");
+  $("#search").placeholder = t("search_sgdb");
+  $("#btn-lang").textContent = t("lang_name");
+  document.documentElement.lang = LANG;
+}
+
+/* ---------------- init ---------------- */
 window.addEventListener("DOMContentLoaded", init);
 
 async function init(){
+  applyStatic();
   buildTabs();
-  $("#account").addEventListener("change", e=>{state.account=e.target.value; loadGames();});
-  $("#filter").addEventListener("input", ()=>renderGames());
+  $("#filter").addEventListener("input", renderGames);
+  $("#search").addEventListener("keydown", e=>{ if(e.key==="Enter") doSearch(); });
+  $("#candidates").addEventListener("change", onCandidate);
   $("#btn-autofill").addEventListener("click", autofill);
   $("#btn-clean").addEventListener("click", openClean);
   $("#btn-key").addEventListener("click", editKey);
-  $("#search").addEventListener("keydown", e=>{if(e.key==="Enter") doSearch();});
-  $("#candidates").addEventListener("change", onCandidate);
+  $("#btn-lang").addEventListener("click", toggleLang);
+  $("#anim").addEventListener("change", e=>{ state.animated=e.target.checked; if(state.gameId) loadArts(); });
+
+  // вкладки источника (Non-Steam / Установленные)
+  document.querySelectorAll(".src-tab").forEach(tab=>{
+    tab.addEventListener("click", ()=>{
+      if(tab.classList.contains("active")) return;
+      document.querySelectorAll(".src-tab").forEach(x=>x.classList.remove("active"));
+      tab.classList.add("active");
+      state.source = tab.dataset.src;
+      $("#src-tabs").dataset.src = state.source;
+      loadGames();
+    });
+  });
+
+  // дропдаун аккаунта
+  $("#acct-btn").addEventListener("click", toggleAcctMenu);
+  document.addEventListener("click", e=>{ if(!$("#acct").contains(e.target)) closeAcctMenu(); });
+  // лайтбокс
+  $("#light-x").addEventListener("click", closeLight);
+  $("#light").addEventListener("click", e=>{ if(e.target.id==="light") closeLight(); });
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ closeLight(); closeModal(); } });
 
   try{
     const st = await jget("/api/state");
     setKey(st.key_ok);
-    if(!st.steam_path){ toast("Steam не найден","bad"); return; }
-    const sel=$("#account"); sel.innerHTML="";
-    st.accounts.forEach(a=>sel.appendChild(el("option",null,a)));
-    if(st.accounts.length){ state.account=st.accounts[0]; sel.value=state.account; loadGames(); }
-    if(!st.key_ok) toast("Нет API-ключа — нажми «Ключ»","bad");
-  }catch(e){ toast("Ошибка: "+e.message,"bad"); }
+    if(!st.steam_path){ toast(t("steam_not_found"),"bad"); return; }
+    state.accounts = st.accounts || [];
+    renderAcctMenu();
+    if(state.accounts.length){ selectAccount(state.accounts[0].uid); }
+    if(!st.key_ok) toast(t("no_key_hint"),"bad");
+  }catch(e){ toast(t("error")+e.message,"bad"); }
 }
 
-function setKey(ok){
-  const p=$("#key-pill");
-  p.innerHTML = KEY_ICON+"<span>"+(ok?"Ключ: OK":"Ключ: нет")+"</span>";
-  p.className = "pill "+(ok?"ok":"bad");
+function toggleLang(){
+  setLang(nextLang());
+  applyStatic();
+  buildTabs();
+  setKey(state.keyOk);
+  renderAcctMenu();
+  if(state.matchName) $("#match-sub").innerHTML = matchSubHtml();
+  else if(state.selected) $("#match-sub").textContent = t("searching");
+  if(!state.selected) $("#match-name").textContent = t("pick_game");
 }
 
-/* ---------- games ---------- */
+/* ---------------- аккаунты ---------------- */
+function acctInitial(a){ return (a.name||a.uid||"?").trim().charAt(0).toUpperCase(); }
+function avatarStyle(a){ return a.has_avatar ? `background-image:url(/api/avatar?account=${enc(a.uid)})` : ""; }
+
+function renderAcctMenu(){
+  const menu=$("#acct-menu"); menu.innerHTML="";
+  state.accounts.forEach(a=>{
+    const row=el("div","acct-row"+(a.uid===state.account?" sel":""));
+    const av=el("span","acct-av"); av.style.cssText=avatarStyle(a); if(!a.has_avatar) av.textContent=acctInitial(a);
+    row.appendChild(av);
+    row.appendChild(el("div",null,`<b>${escapeHtml(a.name||a.uid)}</b><small>${escapeHtml(a.uid)}</small>`));
+    row.addEventListener("click", ()=>{ selectAccount(a.uid); closeAcctMenu(); });
+    menu.appendChild(row);
+  });
+}
+function selectAccount(uid){
+  state.account = uid;
+  const a = state.accounts.find(x=>x.uid===uid) || {uid};
+  const av=$("#acct-av"); av.style.cssText=avatarStyle(a); av.textContent = a.has_avatar ? "" : acctInitial(a);
+  $("#acct-name").textContent = a.name || uid;
+  renderAcctMenu();
+  loadGames();
+}
+function toggleAcctMenu(){ const m=$("#acct-menu"); const open=m.classList.toggle("hidden"); $("#acct-btn").setAttribute("aria-expanded", String(!open)); }
+function closeAcctMenu(){ $("#acct-menu").classList.add("hidden"); $("#acct-btn").setAttribute("aria-expanded","false"); }
+
+/* ---------------- список игр ---------------- */
 async function loadGames(){
   if(!state.account) return;
+  state.selected=null; state.gameId=null; state.matchName=null;
+  $("#match-name").textContent=t("pick_game"); $("#match-sub").textContent="";
+  $("#grid").innerHTML=""; $("#candidates").classList.add("hidden");
   try{
-    const d = await jget("/api/games?account="+encodeURIComponent(state.account));
-    state.games = d.games;
+    const d = await jget(`/api/games?account=${enc(state.account)}&source=${state.source}`);
+    state.games = d.games||[];
     renderGames();
-    const first = document.querySelector("#games .game");
-    if(first) first.click();   // авто-выбор первой игры
-  }catch(e){ toast("Не загрузить игры: "+e.message,"bad"); }
+    const first=document.querySelector("#games .game");
+    if(first) first.click();
+  }catch(e){ toast(t("games_err")+e.message,"bad"); }
 }
 
 function renderGames(){
-  const flt = $("#filter").value.trim().toLowerCase();
-  const box = $("#games"); box.innerHTML="";
+  const flt=$("#filter").value.trim().toLowerCase();
+  const box=$("#games"); box.innerHTML="";
   state.games.filter(g=>!flt||g.name.toLowerCase().includes(flt)).forEach(g=>{
-    const row = el("div","game");
-    row.appendChild(el("span","nm",escapeHtml(g.name)));
-    const dots = el("div","dots");
-    ["cover","banner","hero","logo","icon"].forEach(t=>{
-      const d=el("span","dot"+(g.status[t]?" on":"")); d.title=t; dots.appendChild(d);
-    });
+    const row=el("div","game");
+    if(state.selected && state.selected.appid===g.appid) row.classList.add("active");
+    const ic=el("span","g-ic",GAME_PH);
+    const img=el("img"); img.alt="";
+    img.addEventListener("load",()=>{ ic.innerHTML=""; ic.appendChild(img); });
+    img.src=`/api/gameicon?account=${enc(state.account)}&appid=${g.appid}`;
+    row.appendChild(ic);
+    row.appendChild(el("span","g-nm",escapeHtml(g.name)));
+    const dots=el("div","dots");
+    STATUS_ORDER.forEach(t2=>{ const d=el("span","dot"+(g.status[t2]?" on":"")); d.title=t2; dots.appendChild(d); });
     row.appendChild(dots);
     row.addEventListener("click", ()=>selectGame(g,row));
-    if(state.selected && state.selected.appid===g.appid) row.classList.add("active");
     box.appendChild(row);
   });
 }
 
 async function selectGame(g,row){
-  state.selected=g;
+  state.selected=g; state.gameId=null; state.matchName=null;
   document.querySelectorAll(".game.active").forEach(r=>r.classList.remove("active"));
   if(row) row.classList.add("active");
-  $("#match-name").textContent = g.name;
-  $("#match-sub").textContent = "Поиск совпадения на SteamGridDB…";
+  $("#match-name").textContent=g.name;
+  $("#match-sub").textContent=t("searching");
   $("#candidates").classList.add("hidden");
   $("#empty").classList.add("hidden");
-  renderSkeletons();   // сразу показываем загрузку, ещё до поиска
+  renderSkeletons();
   try{
-    const d = await jget("/api/search?q="+encodeURIComponent(g.name));
-    state.candidates = d.results||[];
+    const d=await jget("/api/search?q="+enc(g.name));
+    state.candidates=d.results||[];
     fillCandidates();
-    if(state.candidates.length){
-      const m=state.candidates[0];
-      setGame(m.id, m.name);
-    }else{
-      $("#match-sub").textContent="Не найдено — попробуй ручной поиск";
-    }
-  }catch(e){ $("#match-sub").textContent="Ошибка поиска: "+e.message; }
+    if(state.candidates.length){ const m=state.candidates[0]; setGame(m.id,m.name); }
+    else $("#match-sub").textContent=t("not_found_manual");
+  }catch(e){ $("#match-sub").textContent=t("search_error")+e.message; }
 }
 
-function setGame(id,name){
-  state.gameId=id; state.matchName=name;
-  $("#match-sub").innerHTML = `SteamGridDB: <b>${escapeHtml(name)}</b> · id ${id}`;
-  loadArts();
-}
+function matchSubHtml(){ return `SteamGridDB: <b>${escapeHtml(state.matchName)}</b> · id ${state.gameId}`; }
+function setGame(id,name){ state.gameId=id; state.matchName=name; $("#match-sub").innerHTML=matchSubHtml(); loadArts(); }
 
-/* ---------- manual search ---------- */
+/* ---------------- ручной поиск ---------------- */
 async function doSearch(){
   const q=$("#search").value.trim() || (state.selected?state.selected.name:"");
   if(!q) return;
   try{
-    const d=await jget("/api/search?q="+encodeURIComponent(q));
+    const d=await jget("/api/search?q="+enc(q));
     state.candidates=d.results||[];
     fillCandidates();
-    if(state.candidates.length){toast("Найдено: "+state.candidates.length);}
-    else toast("Ничего не найдено","bad");
-  }catch(e){toast("Ошибка: "+e.message,"bad");}
+    if(state.candidates.length) toast(t("found_n",state.candidates.length));
+    else toast(t("nothing_found"),"bad");
+  }catch(e){ toast(t("error")+e.message,"bad"); }
 }
-
 function fillCandidates(){
   const sel=$("#candidates"); sel.innerHTML="";
   state.candidates.forEach(g=>sel.appendChild(el("option",null,`${escapeHtml(g.name)} (id ${g.id})`)));
   sel.classList.toggle("hidden", state.candidates.length===0);
 }
+function onCandidate(){ const i=$("#candidates").selectedIndex; if(i>=0&&i<state.candidates.length){ const g=state.candidates[i]; setGame(g.id,g.name); } }
 
-function onCandidate(){
-  const i=$("#candidates").selectedIndex;
-  if(i>=0 && i<state.candidates.length){ const g=state.candidates[i]; setGame(g.id,g.name); }
-}
-
-/* ---------- tabs ---------- */
+/* ---------------- вкладки типов ---------------- */
 function buildTabs(){
   const box=$("#tabs"); box.innerHTML="";
-  TYPES.forEach(t=>{
-    const tab=el("div","tab"+(t.id===state.type?" active":""),t.title);
+  TYPES.forEach(tp=>{
+    const tab=el("div","tab"+(tp.id===state.type?" active":""),(ICONS[tp.id]||"")+"<span>"+t("t_"+tp.id)+"</span>");
     tab.addEventListener("click", ()=>{
-      state.type=t.id;
+      state.type=tp.id;
       document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
       tab.classList.add("active");
       if(state.gameId) loadArts();
     });
     box.appendChild(tab);
   });
+  $("#anim-wrap").style.display = state.type==="icon" ? "none" : "";
 }
 
-/* ---------- arts ---------- */
+/* ---------------- арты ---------------- */
+function cardShell(cfg,i){
+  const c=el("div","card"); c.style.animationDelay=(i*22)+"ms";
+  const w=el("div","imgwrap"); w.style.setProperty("--ar",cfg.ar);
+  c.appendChild(w); return {c,w};
+}
+function skeleton(cfg,i){ const{c}=cardShell(cfg,i); c.classList.add("skeleton"); return c; }
+
 function renderSkeletons(){
-  const cfg=TYPE[state.type];
-  const grid=$("#grid");
-  grid.style.setProperty("--card-w", cfg.w+"px");
+  const cfg=TYPE[state.type], grid=$("#grid");
+  grid.style.setProperty("--card-w",cfg.w+"px");
   grid.innerHTML="";
   if(state.selected) grid.appendChild(currentCard(cfg));
-  for(let i=0;i<12;i++){ grid.appendChild(skeleton(cfg,i)); }
-  grid.dataset.skel = state.type;
+  for(let i=0;i<10;i++) grid.appendChild(skeleton(cfg,i));
+  grid.dataset.skel=state.type+"|"+state.animated;
 }
 
 async function loadArts(){
   if(!state.gameId) return;
-  const t=state.type, cfg=TYPE[t];
-  const token=++state.reqToken;
-  const grid=$("#grid");
-  // не перерисовываем скелетоны, если они уже показаны для этого типа (без мигания)
-  if(grid.dataset.skel!==t || !grid.querySelector(".skeleton")) renderSkeletons();
+  const tp=state.type, cfg=TYPE[tp], token=++state.reqToken, grid=$("#grid");
+  const sig=tp+"|"+state.animated;
+  if(grid.dataset.skel!==sig || !grid.querySelector(".skeleton")) renderSkeletons();
+  $("#anim-wrap").style.display = tp==="icon" ? "none" : "";
   try{
-    const d=await jget(`/api/arts?game_id=${state.gameId}&type=${t}`);
+    const d=await jget(`/api/arts?game_id=${state.gameId}&type=${tp}&animated=${state.animated?1:0}`);
     if(token!==state.reqToken) return;
     grid.querySelectorAll(".skeleton").forEach(s=>s.remove());
     const arts=d.arts||[];
-    if(!arts.length){ grid.appendChild(el("div","empty","Нет вариантов в базе для этого типа")); }
+    if(!arts.length){ grid.appendChild(el("div","empty",t("no_variants"))); return; }
     arts.forEach((a,i)=>grid.appendChild(artCard(a,cfg,i)));
   }catch(e){
     if(token!==state.reqToken) return;
     grid.querySelectorAll(".skeleton").forEach(s=>s.remove());
-    toast("Не загрузить варианты: "+e.message,"bad");
+    toast(t("load_variants_err")+e.message,"bad");
   }
 }
 
-function cardShell(cfg,i){
-  const c=el("div","card");
-  c.style.animationDelay=(i*25)+"ms";
-  const w=el("div","imgwrap");
-  w.style.setProperty("--ar",cfg.ar);
-  c.appendChild(w);
-  return {c,w};
-}
-
-function skeleton(cfg,i){ const {c}=cardShell(cfg,i); c.classList.add("skeleton"); return c; }
-
 function currentCard(cfg){
-  const {c,w}=cardShell(cfg,0);
-  c.classList.add("current");
-  c.appendChild(el("span","badge","Текущая"));
-  const img=el("img");
-  img.style.objectFit=cfg.fit;
-  img.onerror=()=>{ w.innerHTML=""; w.appendChild(el("div","none","нет")); };
-  img.src=`/img?account=${encodeURIComponent(state.account)}&appid=${state.selected.appid}&type=${state.type}&t=${Date.now()}`;
-  w.appendChild(img);
-  return c;
+  const{c,w}=cardShell(cfg,0); c.classList.add("current");
+  c.appendChild(el("span","badge",t("current")));
+  const img=el("img"); img.style.objectFit=cfg.fit;
+  img.onerror=()=>{ w.innerHTML=""; w.appendChild(el("div","none",t("none_short"))); };
+  img.src=`/img?account=${enc(state.account)}&appid=${state.selected.appid}&type=${state.type}&t=${Date.now()}`;
+  w.appendChild(img); return c;
 }
 
 function artCard(a,cfg,i){
-  const {c,w}=cardShell(cfg,i);
-  c.classList.add("loading");
-  const img=el("img");
-  img.style.objectFit=cfg.fit;
+  const{c,w}=cardShell(cfg,i); c.classList.add("loading");
+  if(a.animated) c.appendChild(el("span","badge anim",t("animated_badge")));
+  const img=el("img"); img.style.objectFit=cfg.fit;
   img.addEventListener("load",()=>c.classList.remove("loading"));
   img.addEventListener("error",()=>{
     if(!img.dataset.fb && a.url && a.url!==a.thumb){ img.dataset.fb="1"; img.src=a.url; }
@@ -224,16 +277,16 @@ function artCard(a,cfg,i){
   if(img.complete && img.naturalWidth>0) c.classList.remove("loading");
   w.appendChild(img);
   c.appendChild(meta(a));
-  const btn=el("button","apply","✓ Установить");
-  btn.addEventListener("click",ev=>{ev.stopPropagation(); applyArt(a,c);});
-  c.appendChild(btn);
-  c.addEventListener("click",()=>{
-    document.querySelectorAll(".card.sel").forEach(x=>x.classList.remove("sel"));
-    c.classList.add("sel"); state.selectedArt=a;
-  });
+  const acts=el("div","card-actions");
+  const peek=el("button","peek",PEEK); peek.title=t("preview");
+  peek.addEventListener("click",ev=>{ ev.stopPropagation(); openLight(a); });
+  const ap=el("button","apply",t("apply"));
+  ap.addEventListener("click",ev=>{ ev.stopPropagation(); applyArt(a,c); });
+  acts.appendChild(peek); acts.appendChild(ap);
+  c.appendChild(acts);
+  c.addEventListener("click",()=>openLight(a));
   return c;
 }
-
 function meta(a){
   const m=el("div","meta");
   m.appendChild(el("span",null,(a.width&&a.height)?`${a.width}×${a.height}`:""));
@@ -241,41 +294,50 @@ function meta(a){
   return m;
 }
 
+/* ---------------- лайтбокс предпросмотра ---------------- */
+function openLight(a){
+  state.selectedArt=a;
+  const stage=$("#light-stage"); stage.innerHTML="";
+  const img=el("img"); img.src=a.url||a.thumb; stage.appendChild(img);
+  const dims=(a.width&&a.height)?`${a.width}×${a.height}`:"";
+  $("#light-meta").innerHTML = dims + (a.style?` · <b>${escapeHtml(a.style)}</b>`:"") + (a.animated?` · ${t("animated_badge")}`:"");
+  const ap=$("#light-apply"); ap.textContent=t("apply"); ap.onclick=()=>{ applyArt(a,null); closeLight(); };
+  $("#light").classList.remove("hidden");
+}
+function closeLight(){ $("#light").classList.add("hidden"); $("#light-stage").innerHTML=""; }
+
+/* ---------------- применение ---------------- */
 async function applyArt(a,card){
-  card.classList.add("sel");
+  if(card) card.classList.add("sel");
   try{
     const r=await jpost("/api/apply",{account:state.account,appid:state.selected.appid,type:state.type,url:a.url});
     if(r.ok){
-      toast("Установлено: "+r.dest+" · перезапусти Steam","ok");
+      toast(t("applied",r.dest),"ok");
       document.querySelectorAll(".card.current img").forEach(img=>{
-        img.src=`/img?account=${encodeURIComponent(state.account)}&appid=${state.selected.appid}&type=${state.type}&t=${Date.now()}`;
+        img.src=`/img?account=${enc(state.account)}&appid=${state.selected.appid}&type=${state.type}&t=${Date.now()}`;
       });
-      // обновить точку в списке
       const g=state.games.find(x=>x.appid===state.selected.appid);
       if(g){ g.status[state.type]=true; renderGames(); }
-    }else{ toast("Ошибка: "+(r.error||"?"),"bad"); }
-  }catch(e){ toast("Ошибка применения: "+e.message,"bad"); }
+    }else toast(t("error")+(r.error||"?"),"bad");
+  }catch(e){ toast(t("apply_err")+e.message,"bad"); }
 }
 
-/* ---------- autofill ---------- */
+/* ---------------- авто-дозаливка ---------------- */
 function autofill(){
-  modal("Авто-дозаливка недостающего",
-    `<p>Скачать все недостающие арты и заполнить пробелы? Существующее не трогается.</p>
-     <label style="display:flex;gap:8px;align-items:center;margin-top:10px">
-       <input type="checkbox" id="m-all"> Все аккаунты (иначе только текущий)</label>`,
-    [{t:"Отмена",cls:"ghost",fn:closeModal},
-     {t:"Запустить",fn:()=>{const all=$("#m-all").checked; closeModal(); runAutofill(all?"all":state.account);}}]);
+  modal(t("autofill_title"),
+    `<p>${t("autofill_body")}</p>
+     <label style="display:flex;gap:9px;align-items:center;margin-top:12px;color:var(--txt)">
+       <input type="checkbox" id="m-all" style="width:16px;height:16px;accent-color:var(--coral)"> ${t("autofill_all")}</label>`,
+    [{x:t("cancel"),cls:"ghost",fn:closeModal},
+     {x:t("run"),cls:"primary",fn:()=>{ const all=$("#m-all").checked; closeModal(); runAutofill(all?"all":state.account); }}]);
 }
-
 function runAutofill(scope){
   $("#overlay").classList.remove("hidden");
-  $("#ov-game").textContent="Подготовка…";
-  $("#bar-fill").style.width="0%";
-  $("#ov-count").textContent="";
-  const es=new EventSource("/api/autofill?accounts="+encodeURIComponent(scope));
+  $("#ov-game").textContent=t("prepare"); $("#bar-fill").style.width="0%"; $("#ov-count").textContent="";
+  const es=new EventSource("/api/autofill?accounts="+enc(scope));
   es.onmessage=ev=>{
     const d=JSON.parse(ev.data);
-    if(d.type==="start"){ $("#ov-count").textContent="Игр к обработке: "+d.total; }
+    if(d.type==="start"){ $("#ov-count").textContent=t("to_process",d.total); }
     else if(d.type==="progress"){
       $("#ov-game").textContent=d.game;
       $("#bar-fill").style.width=Math.round(d.i/Math.max(1,d.total)*100)+"%";
@@ -283,19 +345,19 @@ function runAutofill(scope){
     }else if(d.type==="error"){ es.close(); $("#overlay").classList.add("hidden"); toast(d.message,"bad"); }
     else if(d.type==="done"){
       es.close(); $("#overlay").classList.add("hidden");
-      toast(`Дозаливка: +${d.ok}, пропущено ${d.skip}, ошибок ${d.fail} · перезапусти Steam`, d.fail?"bad":"ok");
+      toast(t("autofill_done",d.ok,d.skip,d.fail), d.fail?"bad":"ok");
       loadGames();
     }
   };
-  es.onerror=()=>{ es.close(); $("#overlay").classList.add("hidden"); toast("Соединение прервано","bad"); };
+  es.onerror=()=>{ es.close(); $("#overlay").classList.add("hidden"); toast(t("conn_lost"),"bad"); };
 }
 
-/* ---------- cleanup ---------- */
+/* ---------------- очистка ---------------- */
 async function openClean(){
   let d;
-  try{ d=await jget("/api/orphans"); }catch(e){ toast("Ошибка: "+e.message,"bad"); return; }
+  try{ d=await jget("/api/orphans"); }catch(e){ toast(t("error")+e.message,"bad"); return; }
   const items=d.items||[];
-  if(!items.length){ toast("Осиротевших артов нет","ok"); return; }
+  if(!items.length){ toast(t("no_orphans"),"ok"); return; }
   const body=el("div");
   items.forEach((it,i)=>{
     const row=el("div","orphan");
@@ -303,53 +365,50 @@ async function openClean(){
     row.appendChild(cb);
     const info=el("div");
     info.appendChild(el("div","of",escapeHtml(it.file)));
-    info.appendChild(el("div","oa","аккаунт "+it.account));
-    row.appendChild(info);
-    body.appendChild(row);
+    info.appendChild(el("div","oa",t("account_label")+it.account));
+    row.appendChild(info); body.appendChild(row);
   });
-  modal(`Очистка осиротевших (${items.length})`, body.outerHTML,
-    [{t:"Отмена",cls:"ghost",fn:closeModal},
-     {t:"Удалить выбранное",fn:async()=>{
+  modal(t("clean_title",items.length), body.outerHTML,
+    [{x:t("cancel"),cls:"ghost",fn:closeModal},
+     {x:t("delete_chosen"),cls:"primary",fn:async()=>{
         const chosen=[...document.querySelectorAll(".orphan input:checked")].map(cb=>items[+cb.dataset.i]);
         closeModal();
         const r=await jpost("/api/clean",{items:chosen});
-        toast("Удалено файлов: "+(r.removed||0),"ok");
-        loadGames();
+        toast(t("removed_n",r.removed||0),"ok"); loadGames();
      }}]);
 }
 
-/* ---------- key ---------- */
+/* ---------------- ключ ---------------- */
+function setKey(ok){
+  state.keyOk=ok;
+  const p=$("#key-pill");
+  p.className="pill "+(ok?"ok":"bad");
+  p.textContent = ok? t("key_ok") : t("key_none");
+}
 function editKey(){
-  modal("API-ключ SteamGridDB",
-    `<p style="color:#8b97ad;margin:0 0 10px">steamgriddb.com → Preferences → API</p>
-     <input type="text" id="m-key" placeholder="Вставь ключ…">`,
-    [{t:"Отмена",cls:"ghost",fn:closeModal},
-     {t:"Сохранить",fn:async()=>{
+  modal(t("key_title"),
+    `<p style="margin:0 0 4px">${t("key_hint")}</p><input type="text" id="m-key" placeholder="${t("key_placeholder")}">`,
+    [{x:t("cancel"),cls:"ghost",fn:closeModal},
+     {x:t("save"),cls:"primary",fn:async()=>{
         const v=$("#m-key").value.trim(); closeModal();
         const r=await jpost("/api/key",{key:v});
-        setKey(r.key_ok); toast(r.key_ok?"Ключ сохранён":"Ключ очищен", r.key_ok?"ok":"bad");
-        if(r.key_ok && state.selected) selectGame(state.selected);
+        setKey(r.key_ok); toast(r.key_ok?t("key_saved"):t("key_cleared"), r.key_ok?"ok":"bad");
+        if(r.key_ok && state.selected) selectGame(state.selected, document.querySelector(".game.active"));
      }}]);
 }
 
-/* ---------- ui helpers ---------- */
+/* ---------------- ui-хелперы ---------------- */
 function toast(msg,kind){
-  const t=el("div","toast"+(kind?" "+kind:""),escapeHtml(msg));
-  $("#toasts").appendChild(t);
-  setTimeout(()=>{t.classList.add("out"); setTimeout(()=>t.remove(),300);}, 3800);
+  const e=el("div","toast"+(kind?" "+kind:""),escapeHtml(msg));
+  $("#toasts").appendChild(e);
+  setTimeout(()=>{ e.classList.add("out"); setTimeout(()=>e.remove(),300); }, 4000);
 }
-
 function modal(title,bodyHtml,actions){
   $("#modal-title").textContent=title;
   $("#modal-body").innerHTML=bodyHtml;
   const a=$("#modal-actions"); a.innerHTML="";
-  actions.forEach(act=>{
-    const b=el("button","btn"+(act.cls?" "+act.cls:""),act.t);
-    b.addEventListener("click",act.fn);
-    a.appendChild(b);
-  });
+  actions.forEach(act=>{ const b=el("button","btn "+(act.cls||"ghost"),act.x); b.addEventListener("click",act.fn); a.appendChild(b); });
   $("#modal").classList.remove("hidden");
 }
 function closeModal(){ $("#modal").classList.add("hidden"); }
-
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
