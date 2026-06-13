@@ -95,6 +95,8 @@ def compute_legacy_appid(exe, appname):
 
 def load_shortcuts(vdf_path):
     """Возвращает список словарей: {appid, name, exe, icon, kind:'shortcut'}."""
+    if not os.path.isfile(vdf_path):
+        return []
     with open(vdf_path, "rb") as f:
         data = f.read()
     try:

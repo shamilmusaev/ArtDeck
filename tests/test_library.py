@@ -53,6 +53,11 @@ class LibraryTest(unittest.TestCase):
             grid_dir, orph = find_orphans(vdf)
             self.assertEqual(orph, [])  # no vdf -> nothing treated as orphan (safety)
 
+    def test_load_shortcuts_missing_file_returns_empty(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            missing = os.path.join(tmp, "nope", "shortcuts.vdf")
+            self.assertEqual(load_shortcuts(missing), [])
+
     def test_load_shortcuts_has_icon_and_kind(self):
         with tempfile.TemporaryDirectory() as tmp:
             vdf = os.path.join(tmp, "shortcuts.vdf")
