@@ -44,6 +44,15 @@ class LibraryTest(unittest.TestCase):
             self.assertIn("%dp.png" % (NONSTEAM_MIN + 5), orph)
             self.assertNotIn("440p.png", orph)
 
+    def test_find_orphans_missing_vdf_returns_empty(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            grid = os.path.join(tmp, "grid")
+            os.makedirs(grid)
+            open(os.path.join(grid, "%dp.png" % (NONSTEAM_MIN + 5)), "wb").close()
+            vdf = os.path.join(tmp, "shortcuts.vdf")  # intentionally NOT created
+            grid_dir, orph = find_orphans(vdf)
+            self.assertEqual(orph, [])  # no vdf -> nothing treated as orphan (safety)
+
 
 if __name__ == "__main__":
     unittest.main()

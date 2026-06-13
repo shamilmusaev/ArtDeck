@@ -28,8 +28,8 @@ def load_shortcuts(vdf_path):
     for _, entry in parsed.items():
         if not isinstance(entry, dict):
             continue
-        name = get_ci(entry, "AppName") or get_ci(entry, "appname") or ""
-        exe = get_ci(entry, "Exe") or get_ci(entry, "exe") or ""
+        name = get_ci(entry, "AppName") or ""
+        exe = get_ci(entry, "Exe") or ""
         appid = get_ci(entry, "appid")
         if not appid:
             appid = compute_legacy_appid(exe, name)
@@ -56,6 +56,8 @@ def find_orphans(vdf_path):
     grid_dir = os.path.join(os.path.dirname(vdf_path), "grid")
     if not os.path.isdir(grid_dir):
         return grid_dir, []
+    if not os.path.isfile(vdf_path):
+        return grid_dir, []
     valid = {g["appid"] for g in load_shortcuts(vdf_path)}
     orphans = []
     for fn in os.listdir(grid_dir):
@@ -78,7 +80,7 @@ def clean_orphans(vdf_files, dry_run):
         uid = vdf.split(os.sep)[-3]
         grid_dir, orphans = find_orphans(vdf)
         print("\n=== Аккаунт %s: осиротевших файлов: %d ===" % (uid, len(orphans)))
-        for fn in sorted(orphans):
+        for fn in orphans:
             path = os.path.join(grid_dir, fn)
             if dry_run:
                 print("   DRY  удалить -> %s" % fn)
