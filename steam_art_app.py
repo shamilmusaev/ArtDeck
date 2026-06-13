@@ -96,21 +96,28 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _api_get(self, path, q):
         key = engine.load_api_key(None)
         if path == "/api/state":
+            accounts = engine.list_accounts(STEAM) if STEAM else []
             return self._json({
                 "steam_path": STEAM,
-                "accounts": engine.list_accounts(STEAM) if STEAM else [],
+                "accounts": engine.account_infos(STEAM, accounts) if STEAM else [],
                 "key_ok": bool(key),
             })
         if path == "/api/games":
             acc = q.get("account", [None])[0]
-            games = engine.list_games(STEAM, acc) if (acc and STEAM) else []
+            source = q.get("source", ["shortcut"])[0]
+            if acc and STEAM:
+                games = (engine.installed_games(STEAM, acc) if source == "installed"
+                         else engine.list_games(STEAM, acc))
+            else:
+                games = []
             out = [{
                 "appid": g["appid"],
                 "name": engine.clean_name(g["name"]),
+                "kind": g.get("kind", "shortcut"),
                 "status": {t: bool(g["status"][t]) for t in engine.ART_TYPES},
             } for g in games]
             out.sort(key=lambda g: g["name"].lower())
-            return self._json({"games": out})
+            return self._json({"games": out, "source": source})
         if path == "/api/search":
             if not key:
                 return self._err("no-key", 400)

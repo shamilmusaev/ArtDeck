@@ -43,3 +43,18 @@ def make_library(root, apps):
                    '"AppState"\n{\n  "appid" "%s"\n  "name" "%s"\n  "installdir" "%s"\n}\n'
                    % (appid, name, name.replace(" ", "_")))
     return sa
+
+
+def make_account(steam_root, uid, games, persona=None):
+    """Создаёт userdata/<uid>/config/shortcuts.vdf для games (list для build_shortcuts_vdf).
+    Если persona задан — пишет config/loginusers.vdf с этим именем для uid."""
+    import os
+    cfg = os.path.join(steam_root, "userdata", uid, "config")
+    os.makedirs(cfg, exist_ok=True)
+    with open(os.path.join(cfg, "shortcuts.vdf"), "wb") as f:
+        f.write(build_shortcuts_vdf(games))
+    if persona is not None:
+        sid = int(uid) + 0x0110000100000000
+        write_file(os.path.join(steam_root, "config", "loginusers.vdf"),
+                   '"users"\n{\n  "%d"\n  {\n    "PersonaName" "%s"\n  }\n}\n' % (sid, persona))
+    return cfg
