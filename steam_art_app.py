@@ -243,13 +243,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 status = engine.art_status(grid, g["appid"])
                 missing = [t for t in engine.ART_TYPES if not status[t]]
                 if missing:
-                    work.append((grid, g, missing))
+                    work.append((uid, grid, g, missing))
 
         total = len(work)
         ok = fail = skip = 0
         if not send({"type": "start", "total": total}):
             return
-        for i, (grid, g, missing) in enumerate(work):
+        for i, (uid, grid, g, missing) in enumerate(work):
             if not send({"type": "progress", "i": i + 1, "total": total,
                          "game": engine.clean_name(g["name"])}):
                 return
@@ -269,6 +269,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     url = engine.fetch_art_url(gid, engine.ART_TYPES[t], key)
                     if url:
                         engine.apply_art(grid, g["appid"], t, url)
+                        try:
+                            engine.register_custom_image(STEAM, uid, g["appid"])
+                        except Exception:
+                            pass
                         ok += 1
                     else:
                         skip += 1
@@ -288,6 +292,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 url = data["url"]
                 _, grid = engine.account_paths(STEAM, uid)
                 dest = engine.apply_art(grid, appid, t, url)
+                # регистрируем в кэше нового клиента Steam (иначе анимация не играет)
+                try:
+                    engine.register_custom_image(STEAM, uid, appid)
+                except Exception:
+                    pass
                 return self._json({"ok": True, "dest": os.path.basename(dest)})
             if u.path == "/api/clean":
                 removed = 0
