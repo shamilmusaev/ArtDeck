@@ -26,7 +26,8 @@ sys.path.insert(0, SCRIPTDIR)
 
 import steam as engine
 
-WEBDIR = os.path.join(SCRIPTDIR, "web")
+# В собранном exe (PyInstaller --onefile) ресурсы web/ распакованы в sys._MEIPASS.
+WEBDIR = os.path.join(getattr(sys, "_MEIPASS", SCRIPTDIR), "web")
 STEAM = engine.find_steam_path(None)
 
 
@@ -360,11 +361,11 @@ def main():
     srv = Server(("127.0.0.1", port), Handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     url = "http://127.0.0.1:%d/" % port
-    print("Steam Art UI:", url)
+    print("ArtDeck UI:", url)
     try:
         import webview
-        webview.create_window("Steam Art", url, width=1280, height=820,
-                              min_size=(1024, 640), background_color="#0b0f1a")
+        webview.create_window("ArtDeck", url, width=1280, height=820,
+                              min_size=(1024, 640), background_color="#0a0b10")
         webview.start()
     except Exception as e:
         print("pywebview недоступен (%s), открываю в браузере…" % e)

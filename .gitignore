@@ -9,6 +9,11 @@ __pycache__/
 # Временные файлы
 *.tmp
 
+# Артефакты сборки PyInstaller
+build/
+dist/
+*.spec
+
 # Виртуальные окружения
 .venv/
 venv/

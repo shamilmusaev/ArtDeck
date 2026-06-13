@@ -2,10 +2,15 @@
 """Поиск Steam, API-ключа и путей аккаунтов."""
 import glob
 import os
+import sys
 
-# Каталог приложения = там, где лежит steam_art.py / exe (НЕ внутри пакета steam/),
-# чтобы steam_art.key читался рядом со скриптом как раньше.
-APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Каталог приложения = там, где лежит steam_art.py / .exe (НЕ внутри пакета steam/),
+# чтобы steam_art.key читался рядом с приложением. В собранном exe (PyInstaller)
+# это папка с самим .exe, а не временная _MEIPASS.
+if getattr(sys, "frozen", False):
+    APP_DIR = os.path.dirname(sys.executable)
+else:
+    APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 DEFAULT_STEAM_PATHS = [
     r"C:\Program Files (x86)\Steam",
