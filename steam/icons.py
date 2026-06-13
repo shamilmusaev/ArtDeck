@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Поиск локальной картинки-иконки для строки списка игр.
 Steam менял раскладку librarycache между версиями, поэтому пробуем несколько мест."""
+import glob
 import os
 
 # Приоритет файлов внутри appcache/librarycache/<appid>/ (новая раскладка).
@@ -10,12 +11,14 @@ STEAM_IMAGE_PRIORITY = (
     "library_600x900_2x.jpg",
     "logo.png",
     "header.jpg",
+    "library_hero.jpg",
 )
 
 
 def steam_game_image(steam_path, appid):
     """Лучшая доступная картинка для Steam-игры или None.
-    Порядок: legacy-плоский <appid>_icon.jpg -> файлы в подпапке <appid>/ по приоритету."""
+    Порядок: legacy-плоский <appid>_icon.jpg -> файлы в подпапке <appid>/ по приоритету
+    -> любой не-blur .jpg/.png в подпапке (хеш-именованные ассеты)."""
     lc = os.path.join(steam_path, "appcache", "librarycache")
     legacy = os.path.join(lc, "%d_icon.jpg" % appid)
     if os.path.isfile(legacy):
@@ -25,6 +28,11 @@ def steam_game_image(steam_path, appid):
         for fn in STEAM_IMAGE_PRIORITY:
             p = os.path.join(sub, fn)
             if os.path.isfile(p):
+                return p
+        cands = sorted(glob.glob(os.path.join(sub, "*.jpg")) +
+                       glob.glob(os.path.join(sub, "*.png")))
+        for p in cands:
+            if "_blur" not in os.path.basename(p).lower():
                 return p
     return None
 
