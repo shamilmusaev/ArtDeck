@@ -24,8 +24,6 @@ STEAM_TOOL_APPIDS = {
 _TOOL_NAME_HINTS = (
     "steamworks common redistributables",
     "steam linux runtime",
-    "proton ",
-    "proton experimental",
     "dedicated server",
 )
 
@@ -42,9 +40,11 @@ def list_libraries(steam_path):
     out, seen = [], set()
 
     def add(p):
-        if p and os.path.isdir(p) and p not in seen:
-            seen.add(p)
-            out.append(p)
+        if p and os.path.isdir(p):
+            key = os.path.normcase(os.path.normpath(p))
+            if key not in seen:
+                seen.add(key)
+                out.append(p)
 
     add(steam_path)  # основная библиотека всегда есть
     for cand in (os.path.join(steam_path, "steamapps", "libraryfolders.vdf"),

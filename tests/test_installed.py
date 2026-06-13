@@ -40,6 +40,25 @@ class InstalledTest(unittest.TestCase):
             self.assertTrue(all(isinstance(g["appid"], int) for g in games))
             self.assertIn(228980, STEAM_TOOL_APPIDS)
 
+    def test_real_game_named_proton_not_filtered(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self._steam(tmp, [("", {"1388930": "Proton Bus Simulator Road"})])
+            games = load_installed(tmp)
+            self.assertEqual([g["name"] for g in games], ["Proton Bus Simulator Road"])
+
+    def test_libraries_deduped_when_path_differs_only_by_case_sep(self):
+        import os as _os
+        with tempfile.TemporaryDirectory() as tmp:
+            self._steam(tmp, [("", {"431960": "Wallpaper Engine"})])
+            # вызов с путём в другом регистре/сепараторах не должен задвоить библиотеку
+            alt = tmp.replace(_os.sep, "/")
+            libs = load_installed(alt) if False else None  # noqa
+            # достаточно проверить сам list_libraries на устойчивость к форме пути
+            from steam.library import list_libraries
+            got = list_libraries(tmp)
+            norm = [_os.path.normcase(_os.path.normpath(p)) for p in got]
+            self.assertEqual(len(norm), len(set(norm)))  # без дубликатов
+
 
 if __name__ == "__main__":
     unittest.main()

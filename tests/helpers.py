@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Хелперы для тестов: сборка бинарного shortcuts.vdf в памяти."""
+import os
 import struct
 
 
@@ -27,7 +28,6 @@ def build_shortcuts_vdf(games):
 
 
 def write_file(path, text):
-    import os
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         f.write(text)
@@ -35,7 +35,6 @@ def write_file(path, text):
 
 def make_library(root, apps):
     """Создаёт steamapps/appmanifest_*.acf для набора apps={appid: name}."""
-    import os
     sa = os.path.join(root, "steamapps")
     for appid, name in apps.items():
         write_file(os.path.join(sa, "appmanifest_%s.acf" % appid),
