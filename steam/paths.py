@@ -14,12 +14,13 @@ DEFAULT_STEAM_PATHS = [
 
 
 def load_api_key(cli_key):
+    """API-ключ: приоритет cli_key -> env STEAMGRIDDB_API_KEY -> файл steam_art.key (в APP_DIR)."""
     if cli_key:
         return cli_key.strip()
     env = os.environ.get("STEAMGRIDDB_API_KEY")
     if env:
         return env.strip()
-    key_file = os.path.join(APP_DIR, "steam_art.key")
+    key_file = os.path.join(APP_DIR, "steam_art.key")  # APP_DIR = корень проекта, рядом со steam_art.py
     if os.path.isfile(key_file):
         with open(key_file, "r", encoding="utf-8-sig") as f:
             return f.read().strip()

@@ -18,6 +18,9 @@ class PathsTest(unittest.TestCase):
             open(os.path.join(cfg, "shortcuts.vdf"), "wb").close()
             self.assertEqual(list_accounts(tmp), ["999"])
 
+    def test_load_api_key_cli_takes_priority(self):
+        self.assertEqual(load_api_key("  key  "), "key")
+
     def test_load_api_key_from_env(self):
         os.environ["STEAMGRIDDB_API_KEY"] = "  abc123  "
         try:
