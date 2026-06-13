@@ -94,7 +94,7 @@ def compute_legacy_appid(exe, appname):
 
 
 def load_shortcuts(vdf_path):
-    """Возвращает список словарей: {appid, name, exe}."""
+    """Возвращает список словарей: {appid, name, exe, icon, kind:'shortcut'}."""
     with open(vdf_path, "rb") as f:
         data = f.read()
     try:
@@ -120,7 +120,7 @@ def load_shortcuts(vdf_path):
 
 
 def list_games(steam_path, uid):
-    """Игры аккаунта со статусом артов: [{appid, name, exe, status}, ...]."""
+    """Игры аккаунта со статусом артов: [{appid, name, exe, icon, kind, status}, ...]."""
     vdf, grid_dir = account_paths(steam_path, uid)
     if not os.path.isfile(vdf):
         return []
