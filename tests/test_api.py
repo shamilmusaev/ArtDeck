@@ -129,5 +129,18 @@ class ArtsAvatarIconTest(ApiBase):
             self.assertEqual(body, "ICON")
 
 
+class AutofillGuardTest(ApiBase):
+    def test_autofill_no_steam_does_not_500(self):
+        app.STEAM = None
+        srv = app.Server(("127.0.0.1", app.free_port()), app.Handler)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        self.addCleanup(srv.server_close)
+        self.addCleanup(srv.shutdown)
+        with patch.object(app.engine, "load_api_key", lambda *_: "k"):
+            code, body = _get(srv, "/api/autofill?accounts=all")
+        self.assertEqual(code, 200)
+        self.assertIn('"type": "done"', body)
+
+
 if __name__ == "__main__":
     unittest.main()

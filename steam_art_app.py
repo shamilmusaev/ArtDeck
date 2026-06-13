@@ -218,12 +218,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not key:
             return self._err("no-key", 400)
         acc = q.get("accounts", ["all"])[0]
-        accts = engine.list_accounts(STEAM) if acc == "all" else [acc]
+        accts = (engine.list_accounts(STEAM) if STEAM else []) if acc == "all" else [acc]
 
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
         self.send_header("Cache-Control", "no-cache")
-        self.send_header("Connection", "keep-alive")
         self.end_headers()
 
         def send(ev):
