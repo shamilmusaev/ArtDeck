@@ -157,14 +157,17 @@ function renderGames(){
     row.appendChild(ic);
     row.appendChild(el("span","g-nm",escapeHtml(g.name)));
     const cov=el("div","cov"); let have=0;
+    const has=tp=>!!((g.status && g.status[tp]) || (g.official && g.official[tp]));
     STATUS_ORDER.forEach(tp=>{
-      const on=!!(g.status && g.status[tp]); if(on) have++;
-      const seg=el("span","seg"+(tp==="cover"?" cover":"")+(on?" on":""));
-      seg.title=t("t_"+tp)+(on?" ✓":" ✗");
+      const custom=!!(g.status && g.status[tp]);
+      const present=has(tp); if(present) have++;
+      // on = наш кастомный арт (mint); off = официальный арт Steam (приглушённый)
+      const seg=el("span","seg"+(tp==="cover"?" cover":"")+(custom?" on":present?" off":""));
+      seg.title=t("t_"+tp)+(present?" ✓":" ✗");
       cov.appendChild(seg);
     });
-    const missing=STATUS_ORDER.filter(tp=>!(g.status && g.status[tp])).map(tp=>t("t_"+tp));
-    cov.classList.toggle("need", !(g.status && g.status.cover));
+    const missing=STATUS_ORDER.filter(tp=>!has(tp)).map(tp=>t("t_"+tp));
+    cov.classList.toggle("need", !has("cover"));
     cov.title = have===5 ? t("cov_full")
       : t("cov_count",have)+" · "+t("cov_missing")+": "+missing.join(", ");
     row.appendChild(cov);
@@ -293,10 +296,15 @@ async function loadArts(){
 function currentCard(cfg){
   const{c,w}=cardShell(cfg,0); c.classList.add("current");
   c.appendChild(el("span","badge",t("current")));
+  const src=`/img?account=${enc(state.account)}&appid=${state.selected.appid}&type=${state.type}&t=${Date.now()}`;
   const img=el("img"); img.style.objectFit=cfg.fit;
-  img.onerror=()=>{ w.innerHTML=""; w.appendChild(el("div","none",t("none_short"))); };
-  img.src=`/img?account=${enc(state.account)}&appid=${state.selected.appid}&type=${state.type}&t=${Date.now()}`;
-  w.appendChild(img); return c;
+  let hasArt=true;
+  img.onerror=()=>{ hasArt=false; w.innerHTML=""; w.appendChild(el("div","none",t("none_short"))); c.classList.add("nopic"); };
+  img.src=src; w.appendChild(img);
+  c.appendChild(el("div","cur-cap",t("current_cap")));
+  c.title=t("current_hint");
+  c.addEventListener("click",()=>{ if(hasArt) openLight({url:src,thumb:src}); });
+  return c;
 }
 
 function artCard(a,cfg,i){
@@ -359,6 +367,8 @@ function closeLight(){ $("#light").classList.add("hidden"); $("#light-stage").in
 
 /* ---------------- применение ---------------- */
 async function applyArt(a,card){
+  // только один вариант помечен как применённый: снимаем подсветку с остальных
+  document.querySelectorAll("#grid .card.sel").forEach(c=>c.classList.remove("sel"));
   if(card) card.classList.add("sel");
   try{
     const r=await jpost("/api/apply",{account:state.account,appid:state.selected.appid,type:state.type,url:a.url});
@@ -370,8 +380,8 @@ async function applyArt(a,card){
       });
       const g=state.games.find(x=>x.appid===state.selected.appid);
       if(g){ g.status[state.type]=true; renderGames(); }
-    }else toast(t("error")+(r.error||"?"),"bad");
-  }catch(e){ toast(t("apply_err")+e.message,"bad"); }
+    }else{ if(card) card.classList.remove("sel"); toast(t("error")+(r.error||"?"),"bad"); }
+  }catch(e){ if(card) card.classList.remove("sel"); toast(t("apply_err")+e.message,"bad"); }
 }
 
 /* ---------------- авто-дозаливка ---------------- */

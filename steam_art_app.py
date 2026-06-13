@@ -114,11 +114,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
                          else engine.list_games(STEAM, acc))
             else:
                 games = []
+            is_installed = source == "installed"
             out = [{
                 "appid": g["appid"],
                 "name": engine.clean_name(g["name"]),
                 "kind": g.get("kind", "shortcut"),
+                # status[t] = НАШ кастомный арт; official[t] = официальный арт Steam (установленные)
                 "status": {t: bool(g["status"][t]) for t in engine.ART_TYPES},
+                "official": ({t: engine.official_art(STEAM, g["appid"], t) is not None
+                              for t in engine.ART_TYPES}
+                             if is_installed else {t: False for t in engine.ART_TYPES}),
             } for g in games]
             out.sort(key=lambda g: g["name"].lower())
             return self._json({"games": out, "source": source})
@@ -180,6 +185,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._err("bad", 400)
         _, grid = engine.account_paths(STEAM, uid)
         p = engine.existing_art(grid, int(appid), engine.ART_TYPES[t]["suffix"])
+        if not p or not os.path.isfile(p):
+            p = engine.official_art(STEAM, int(appid), t)  # официальный арт Steam (установленные игры)
         if not p or not os.path.isfile(p):
             return self._err("none", 404)
         self._send_file(p, cache=False)
