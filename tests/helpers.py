@@ -24,3 +24,21 @@ def build_shortcuts_vdf(games):
         body += b"\x00" + _cstr(str(i)) + entry
     body += b"\x08"  # конец map shortcuts
     return b"\x00" + _cstr("shortcuts") + body
+
+
+def write_file(path, text):
+    import os
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(text)
+
+
+def make_library(root, apps):
+    """Создаёт steamapps/appmanifest_*.acf для набора apps={appid: name}."""
+    import os
+    sa = os.path.join(root, "steamapps")
+    for appid, name in apps.items():
+        write_file(os.path.join(sa, "appmanifest_%s.acf" % appid),
+                   '"AppState"\n{\n  "appid" "%s"\n  "name" "%s"\n  "installdir" "%s"\n}\n'
+                   % (appid, name, name.replace(" ", "_")))
+    return sa
