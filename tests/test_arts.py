@@ -2,8 +2,9 @@
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 from steam import arts
-from steam.arts import existing_art, art_status, apply_art, ART_TYPES
+from steam.arts import existing_art, art_status, apply_art, list_arts, fetch_art_url, ART_TYPES
 
 
 class ArtsTest(unittest.TestCase):
@@ -24,15 +25,41 @@ class ArtsTest(unittest.TestCase):
             open(os.path.join(grid, "100p.jpg"), "wb").close()
 
             def fake_download(url, dest):
-                open(dest, "wb").close()
-            old = arts.download
-            arts.download = fake_download
-            try:
+                with open(dest, "wb"):
+                    pass
+            with patch("steam.arts.download", fake_download):
                 dest = apply_art(grid, 100, "cover", "http://x/y.png")
-            finally:
-                arts.download = old
             self.assertTrue(dest.endswith("100p.png"))
             self.assertFalse(os.path.isfile(os.path.join(grid, "100p.jpg")))
+
+
+    def test_list_arts_sorts_cover_600x900_first(self):
+        raw = [
+            {"url": "u1", "thumb": "t1", "width": 920, "height": 430, "style": "alt"},
+            {"url": "u2", "thumb": None, "width": 600, "height": 900, "style": "official"},
+            {"url": None, "thumb": "t3", "width": 600, "height": 900, "style": "broken"},
+        ]
+        with patch("steam.arts.list_arts_raw", lambda *a, **k: raw):
+            items = list_arts(123, "cover", "key")
+        self.assertEqual(items[0]["url"], "u2")          # 600x900 first
+        self.assertEqual(items[0]["thumb"], "u2")        # thumb falls back to url
+        self.assertTrue(all(i["url"] for i in items))    # url=None item filtered out
+        self.assertEqual(len(items), 2)
+
+    def test_fetch_art_url_falls_back_without_dimensions(self):
+        calls = []
+        def fake_raw(endpoint, game_id, api_key, params):
+            calls.append(dict(params))
+            if "dimensions" in params:
+                return []                      # first try with dimensions -> empty
+            return [{"url": "fallback"}]       # retry without dimensions -> hit
+        cfg = ART_TYPES["cover"]               # cover has a "dimensions" param
+        with patch("steam.arts.list_arts_raw", fake_raw):
+            url = fetch_art_url(42, cfg, "key")
+        self.assertEqual(url, "fallback")
+        self.assertEqual(len(calls), 2)        # tried twice
+        self.assertIn("dimensions", calls[0])  # first call had dimensions
+        self.assertNotIn("dimensions", calls[1])  # retry dropped dimensions
 
 
 if __name__ == "__main__":
