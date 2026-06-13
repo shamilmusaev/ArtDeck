@@ -231,8 +231,17 @@ main{
 .match-info{min-width:0}
 .match-name{font-family:var(--display); font-weight:700; font-size:19px; letter-spacing:-.01em;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.match-sub{font-size:12.5px; color:var(--dim); margin-top:3px}
+.match-sub{font-size:12.5px; color:var(--dim); margin-top:6px;
+  display:flex; flex-wrap:wrap; align-items:center; gap:6px}
 .match-sub b{color:var(--mint); font-weight:600}
+/* совпадение SteamGridDB — компактными бейджами вместо строки текста */
+.mbadge{display:inline-flex; align-items:center; height:23px; padding:0 9px; border-radius:7px;
+  font-size:11.5px; font-weight:600; line-height:1; white-space:nowrap;
+  background:var(--ink-3); border:1px solid var(--line); color:var(--dim)}
+.mbadge.src{text-transform:uppercase; letter-spacing:.05em; font-size:10px; color:var(--faint)}
+.mbadge.name{max-width:340px; overflow:hidden; text-overflow:ellipsis; display:inline-block;
+  line-height:21px; color:var(--mint); background:var(--mint-dim); border-color:rgba(84,224,199,.32)}
+.mbadge.id{font-family:var(--mono); font-size:10.5px; font-weight:500; color:var(--faint)}
 .match-search{position:relative; display:flex; align-items:center; gap:8px; width:min(40%,360px);
   padding:0 12px; height:40px; background:var(--ink); border:1px solid var(--line); border-radius:11px}
 .match-search:focus-within{border-color:var(--line-2)}
@@ -354,26 +363,49 @@ main{
 .peek:hover{border-color:var(--coral)}
 .peek svg{width:16px; height:16px}
 
-/* «Сейчас» — это не вариант для установки, а живой предпросмотр того, что стоит
-   в Steam. Поэтому рамка мятная (а не коралловая «применено») и кликабельна. */
+/* «Текущая» — не вариант для установки, а живой предпросмотр того, что стоит в
+   Steam. Оформлена как арт «в оправе»: мятная рамка поверх картинки, мягкое
+   многослойное свечение, премиальный бейдж. */
 .card.current{
-  cursor:pointer; border-color:var(--mint);
-  box-shadow:0 0 0 1px rgba(84,224,199,.45), 0 16px 42px -22px rgba(84,224,199,.55);
+  cursor:pointer; border-color:transparent;
+  background:linear-gradient(180deg, rgba(84,224,199,.12), transparent 42%), var(--ink-2);
+  box-shadow:
+    0 0 0 1px rgba(84,224,199,.55),
+    0 16px 40px -20px rgba(84,224,199,.55),
+    0 0 70px -28px rgba(84,224,199,.6);
+}
+.card.current::before{           /* внутренняя рамка-оправа поверх арта */
+  content:""; position:absolute; inset:7px; z-index:4; pointer-events:none;
+  border-radius:8px; box-shadow:inset 0 0 0 1px rgba(84,224,199,.45);
+}
+.card.current::after{            /* мягкое мятное свечение по краям */
+  content:""; position:absolute; inset:0; z-index:3; pointer-events:none; border-radius:inherit;
+  box-shadow:inset 0 0 26px -6px rgba(84,224,199,.4);
 }
 .card.current:hover{
-  transform:translateY(-3px);
-  box-shadow:0 0 0 1px var(--mint), 0 20px 48px -18px rgba(84,224,199,.7);
+  transform:translateY(-4px);
+  box-shadow:
+    0 0 0 1px var(--mint),
+    0 24px 54px -18px rgba(84,224,199,.75),
+    0 0 84px -26px rgba(84,224,199,.7);
 }
-.card.current .badge{background:rgba(84,224,199,.92)}
+.card.current .badge{
+  z-index:6; display:inline-flex; align-items:center; gap:6px;
+  background:linear-gradient(135deg, var(--mint), #34c6aa); color:#06231e;
+  box-shadow:0 6px 16px -6px rgba(84,224,199,.8);
+}
+.card.current .badge::before{content:""; width:6px; height:6px; border-radius:50%; background:#06231e}
 .cur-cap{
-  position:absolute; left:0; right:0; bottom:0; z-index:3;
-  padding:18px 10px 8px; text-align:center;
-  font-size:11px; font-weight:700; letter-spacing:.03em; color:var(--mint);
-  background:linear-gradient(transparent, rgba(5,16,14,.85) 60%);
+  position:absolute; left:0; right:0; bottom:0; z-index:5;
+  padding:20px 10px 9px; text-align:center;
+  font-size:11px; font-weight:700; letter-spacing:.04em; color:var(--mint);
+  text-shadow:0 1px 6px rgba(5,16,14,.9);
+  background:linear-gradient(transparent, rgba(5,16,14,.9) 65%);
   pointer-events:none;
 }
-.card.current.nopic{cursor:default; border-color:var(--line-2); box-shadow:none}
-.card.current.nopic:hover{transform:none; box-shadow:var(--shadow)}
+.card.current.nopic{cursor:default; background:var(--ink-2); box-shadow:0 0 0 1px var(--line-2)}
+.card.current.nopic::before,.card.current.nopic::after{display:none}
+.card.current.nopic:hover{transform:none; box-shadow:0 0 0 1px var(--line-2)}
 .card.current.nopic .cur-cap{display:none}
 
 .empty{flex:1; display:grid; place-items:center; color:var(--faint); font-size:14px}

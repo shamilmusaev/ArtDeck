@@ -33,7 +33,7 @@ const I18N = {
     t_icon: "Icon",
 
     only_animated: "Только анимированные",
-    current: "Сейчас",
+    current: "Текущая",
     current_cap: "Стоит в Steam",
     current_hint: "Текущая обложка в Steam — нажми, чтобы рассмотреть",
     apply: "Установить",
@@ -115,7 +115,7 @@ const I18N = {
     t_icon: "Icon",
 
     only_animated: "Animated only",
-    current: "Live",
+    current: "Current",
     current_cap: "Set in Steam",
     current_hint: "Current art in Steam — click to view",
     apply: "Apply",
