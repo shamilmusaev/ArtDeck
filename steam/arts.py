@@ -43,10 +43,13 @@ def fetch_art_url(game_id, art_cfg, api_key):
     return data[0]["url"]
 
 
-def list_arts(game_id, art_type, api_key, limit=40):
-    """Список вариантов арта данного типа: [{url, thumb, width, height, style}, ...]."""
+def list_arts(game_id, art_type, api_key, limit=40, animated=False):
+    """Список вариантов арта данного типа:
+    [{url, thumb, width, height, style, animated}, ...].
+    animated=True -> запрашиваем только анимированные (types=animated)."""
     cfg = ART_TYPES[art_type]
-    data = list_arts_raw(cfg["endpoint"], game_id, api_key, {"types": "static"})
+    art_kind = "animated" if animated else "static"
+    data = list_arts_raw(cfg["endpoint"], game_id, api_key, {"types": art_kind})
     items = []
     for a in data:
         items.append({
@@ -55,6 +58,7 @@ def list_arts(game_id, art_type, api_key, limit=40):
             "width": a.get("width"),
             "height": a.get("height"),
             "style": a.get("style"),
+            "animated": animated,
         })
     if art_type == "cover":
         items.sort(key=lambda a: 0 if (a["width"], a["height"]) == (600, 900) else 1)

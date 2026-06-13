@@ -46,6 +46,26 @@ class ArtsTest(unittest.TestCase):
         self.assertTrue(all(i["url"] for i in items))    # url=None item filtered out
         self.assertEqual(len(items), 2)
 
+    def test_list_arts_animated_requests_animated_type(self):
+        captured = {}
+        def fake_raw(endpoint, game_id, api_key, params):
+            captured["params"] = dict(params)
+            return [{"url": "u", "thumb": "t", "width": 600, "height": 900, "style": "s"}]
+        with patch("steam.arts.list_arts_raw", fake_raw):
+            items = list_arts(1, "cover", "key", animated=True)
+        self.assertEqual(captured["params"]["types"], "animated")
+        self.assertTrue(items and items[0]["animated"] is True)
+
+    def test_list_arts_static_by_default(self):
+        captured = {}
+        def fake_raw(endpoint, game_id, api_key, params):
+            captured["params"] = dict(params)
+            return [{"url": "u", "thumb": "t", "width": 600, "height": 900, "style": "s"}]
+        with patch("steam.arts.list_arts_raw", fake_raw):
+            items = list_arts(1, "cover", "key")
+        self.assertEqual(captured["params"]["types"], "static")
+        self.assertFalse(items[0]["animated"])
+
     def test_fetch_art_url_falls_back_without_dimensions(self):
         calls = []
         def fake_raw(endpoint, game_id, api_key, params):
