@@ -14,16 +14,19 @@
 </div>
 
 <header class="topbar glass">
-  <div class="brand"><span class="logo">◆</span> Steam<span class="accent">Art</span></div>
+  <div class="brand"><span class="logo-badge">S</span>Steam<span class="accent">Art</span></div>
   <div class="controls">
     <div class="select-wrap">
-      <span class="lbl">Аккаунт</span>
-      <select id="account"></select>
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>
+      <div class="acc-col">
+        <span class="lbl">Аккаунт</span>
+        <select id="account"></select>
+      </div>
     </div>
-    <button id="btn-autofill" class="btn">⚡ Авто-дозаливка</button>
-    <button id="btn-clean" class="btn ghost">🧹 Очистка</button>
+    <button id="btn-autofill" class="btn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg><span>Авто-дозаливка</span></button>
+    <button id="btn-clean" class="btn ghost"><svg class="ic ic-brush" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.376 2.622a1 1 0 1 1 3.002 3.002L17.36 9.643a.5.5 0 0 0 0 .707l.944.944a2.41 2.41 0 0 1 0 3.408l-.944.944a.5.5 0 0 1-.707 0L8.354 9.354a.5.5 0 0 1 0-.707l.944-.944a2.41 2.41 0 0 1 3.408 0l.944.944a.5.5 0 0 0 .707 0z"/><path class="bristle" d="M9 8c-1.804 2.71-3.97 3.46-6.583 3.948a.507.507 0 0 0-.302.819l7.32 8.883a1 1 0 0 0 1.185.204C12.735 21.193 15 19.143 15 16"/></svg><span>Очистка</span></button>
     <span id="key-pill" class="pill">…</span>
-    <button id="btn-key" class="btn ghost small">Ключ</button>
+    <button id="btn-key" class="btn ghost small"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg><span>Ключ</span></button>
   </div>
 </header>
 

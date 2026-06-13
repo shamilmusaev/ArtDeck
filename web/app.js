@@ -1,5 +1,15 @@
 "use strict";
 
+const SVG = (b)=>`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${b}</svg>`;
+const ICONS = {
+  cover:  SVG(`<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="1.6"/><path d="m21 15-4-4-9 9"/>`),
+  banner: SVG(`<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="10" r="1.6"/><path d="m22 16-5-5L9 19"/>`),
+  hero:   SVG(`<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-5h5v5"/>`),
+  logo:   SVG(`<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>`),
+  icon:   SVG(`<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/>`),
+};
+const KEY_ICON = SVG(`<path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/>`);
+
 const TYPES = [
   {id:"cover",  title:"Обложка", ar:"2/3",    w:160, fit:"cover"},
   {id:"banner", title:"Баннер",  ar:"460/215", w:250, fit:"cover"},
@@ -45,7 +55,7 @@ async function init(){
 
 function setKey(ok){
   const p=$("#key-pill");
-  p.textContent = ok?"Ключ: OK":"Ключ: нет";
+  p.innerHTML = KEY_ICON+"<span>"+(ok?"Ключ: OK":"Ключ: нет")+"</span>";
   p.className = "pill "+(ok?"ok":"bad");
 }
 
