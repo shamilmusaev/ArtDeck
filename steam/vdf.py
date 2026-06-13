@@ -51,6 +51,9 @@ def get_ci(d, key):
     return None
 
 
+_VDF_ESCAPES = {"n": "\n", "t": "\t"}
+
+
 def _tokenize_text_vdf(text):
     """Токенайзер текстового VDF: кавыченные строки, { и }, // комментарии."""
     tokens = []
@@ -71,7 +74,7 @@ def _tokenize_text_vdf(text):
             while i < n and text[i] != '"':
                 if text[i] == "\\" and i + 1 < n:
                     nxt = text[i + 1]
-                    buf.append({"n": "\n", "t": "\t"}.get(nxt, nxt))
+                    buf.append(_VDF_ESCAPES.get(nxt, nxt))
                     i += 2
                 else:
                     buf.append(text[i])
@@ -106,9 +109,11 @@ def parse_text_vdf(text):
             if pos < len(tokens) and tokens[pos] == "{":
                 pos += 1
                 obj[key] = parse_obj()
-            else:
-                obj[key] = tokens[pos] if pos < len(tokens) else ""
+            elif pos < len(tokens) and tokens[pos] != "}":
+                obj[key] = tokens[pos]
                 pos += 1
+            else:
+                obj[key] = ""  # ключ без значения — не «съедаем» закрывающую }
         return obj
 
     return parse_obj()
