@@ -105,6 +105,15 @@ class FacadeTest(unittest.TestCase):
             self.assertIn(name, steam.__all__, "not in __all__: " + name)
             self.assertTrue(hasattr(steam, name), "missing: " + name)
 
+    def test_plan2_names_present(self):
+        import steam
+        for name in ("parse_text_vdf", "list_libraries", "load_installed",
+                     "installed_games", "STEAM_TOOL_APPIDS", "account_steamid64",
+                     "load_users", "account_name", "account_avatar_path",
+                     "account_infos", "steam_game_image", "game_icon_path"):
+            self.assertIn(name, steam.__all__, "not in __all__: " + name)
+            self.assertTrue(hasattr(steam, name), "missing: " + name)
+
 
 if __name__ == "__main__":
     unittest.main()

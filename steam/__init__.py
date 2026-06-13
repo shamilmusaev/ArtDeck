@@ -17,7 +17,13 @@ from steam.arts import (
 from steam.library import (
     NONSTEAM_MIN, compute_legacy_appid, load_shortcuts, list_games,
     find_orphans, clean_orphans,
+    STEAM_TOOL_APPIDS, list_libraries, load_installed, installed_games,
 )
+from steam.users import (
+    account_steamid64, load_users, account_name, account_avatar_path, account_infos,
+)
+from steam.icons import STEAM_IMAGE_PRIORITY, steam_game_image, game_icon_path
+from steam.vdf import parse_text_vdf
 
 __all__ = [
     "APP_DIR", "DEFAULT_STEAM_PATHS", "find_steam_path", "load_api_key",
@@ -27,4 +33,8 @@ __all__ = [
     "ART_TYPES", "ART_EXTS", "existing_art", "art_status", "apply_art",
     "list_arts", "fetch_art_url", "NONSTEAM_MIN", "compute_legacy_appid",
     "load_shortcuts", "list_games", "find_orphans", "clean_orphans",
+    "STEAM_TOOL_APPIDS", "list_libraries", "load_installed", "installed_games",
+    "account_steamid64", "load_users", "account_name", "account_avatar_path",
+    "account_infos", "STEAM_IMAGE_PRIORITY", "steam_game_image", "game_icon_path",
+    "parse_text_vdf",
 ]
