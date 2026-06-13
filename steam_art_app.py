@@ -24,7 +24,7 @@ import mimetypes
 SCRIPTDIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPTDIR)
 
-import steam_art as engine
+import steam as engine
 
 WEBDIR = os.path.join(SCRIPTDIR, "web")
 STEAM = engine.find_steam_path(None)

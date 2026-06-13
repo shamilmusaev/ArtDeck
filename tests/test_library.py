@@ -54,5 +54,16 @@ class LibraryTest(unittest.TestCase):
             self.assertEqual(orph, [])  # no vdf -> nothing treated as orphan (safety)
 
 
+class FacadeTest(unittest.TestCase):
+    def test_public_api_exposed(self):
+        import steam
+        for name in ("find_steam_path", "load_api_key", "list_accounts",
+                     "account_paths", "list_games", "clean_name", "ART_TYPES",
+                     "search_games", "list_arts", "SGDBError", "SGDBAuthError",
+                     "find_orphans", "existing_art", "load_shortcuts", "art_status",
+                     "search_game_id", "fetch_art_url", "apply_art"):
+            self.assertTrue(hasattr(steam, name), "missing: " + name)
+
+
 if __name__ == "__main__":
     unittest.main()
