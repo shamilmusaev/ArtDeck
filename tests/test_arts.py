@@ -32,6 +32,16 @@ class ArtsTest(unittest.TestCase):
             self.assertTrue(dest.endswith("100p.png"))
             self.assertFalse(os.path.isfile(os.path.join(grid, "100p.jpg")))
 
+    def test_apply_art_webp_saved_as_png(self):
+        with tempfile.TemporaryDirectory() as grid:
+            def fake_download(url, dest):
+                with open(dest, "wb"):
+                    pass
+            with patch("steam.arts.download", fake_download):
+                dest = apply_art(grid, 200, "cover", "http://x/anim.webp")
+            self.assertTrue(dest.endswith("200p.png"))   # webp сохраняем как .png (иначе Steam игнорит)
+            self.assertFalse(os.path.isfile(os.path.join(grid, "200p.webp")))
+
     def test_revert_art_removes_slot(self):
         from steam.arts import revert_art
         with tempfile.TemporaryDirectory() as grid:

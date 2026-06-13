@@ -82,6 +82,11 @@ def apply_art(grid_dir, appid, art_type, url):
     ext = os.path.splitext(parse.urlparse(url).path)[1].lower() or ".png"
     if ext not in ART_EXTS:
         ext = ".png"
+    # Steam (особенно для установленных игр) читает обложку из .png/.jpg, но игнорирует
+    # .webp; формат он определяет по содержимому, поэтому webp в файле .png рендерится
+    # нормально. Сохраняем webp под .png — иначе арт «не применяется».
+    if ext == ".webp":
+        ext = ".png"
     os.makedirs(grid_dir, exist_ok=True)
     for e in ART_EXTS:
         if e == ext:
