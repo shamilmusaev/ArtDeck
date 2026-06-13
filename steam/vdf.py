@@ -49,3 +49,66 @@ def get_ci(d, key):
         if k.lower() == kl:
             return v
     return None
+
+
+def _tokenize_text_vdf(text):
+    """Токенайзер текстового VDF: кавыченные строки, { и }, // комментарии."""
+    tokens = []
+    i, n = 0, len(text)
+    while i < n:
+        c = text[i]
+        if c in " \t\r\n":
+            i += 1
+        elif c == "/" and i + 1 < n and text[i + 1] == "/":
+            j = text.find("\n", i)
+            i = n if j == -1 else j + 1
+        elif c == "{" or c == "}":
+            tokens.append(c)
+            i += 1
+        elif c == '"':
+            i += 1
+            buf = []
+            while i < n and text[i] != '"':
+                if text[i] == "\\" and i + 1 < n:
+                    nxt = text[i + 1]
+                    buf.append({"n": "\n", "t": "\t"}.get(nxt, nxt))
+                    i += 2
+                else:
+                    buf.append(text[i])
+                    i += 1
+            tokens.append("".join(buf))
+            i += 1  # закрывающая кавычка
+        else:
+            # неэкранированный токен (редко в Steam-файлах)
+            j = i
+            while j < n and text[j] not in ' \t\r\n"{}':
+                j += 1
+            tokens.append(text[i:j])
+            i = j
+    return tokens
+
+
+def parse_text_vdf(text):
+    """Разбирает текстовый VDF (.acf, libraryfolders.vdf, loginusers.vdf) в dict."""
+    tokens = _tokenize_text_vdf(text)
+    pos = 0
+
+    def parse_obj():
+        nonlocal pos
+        obj = {}
+        while pos < len(tokens):
+            tok = tokens[pos]
+            if tok == "}":
+                pos += 1
+                return obj
+            pos += 1
+            key = tok
+            if pos < len(tokens) and tokens[pos] == "{":
+                pos += 1
+                obj[key] = parse_obj()
+            else:
+                obj[key] = tokens[pos] if pos < len(tokens) else ""
+                pos += 1
+        return obj
+
+    return parse_obj()
