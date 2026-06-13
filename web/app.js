@@ -156,9 +156,18 @@ function renderGames(){
     img.src=`/api/gameicon?account=${enc(state.account)}&appid=${g.appid}`;
     row.appendChild(ic);
     row.appendChild(el("span","g-nm",escapeHtml(g.name)));
-    const dots=el("div","dots");
-    STATUS_ORDER.forEach(t2=>{ const d=el("span","dot"+(g.status[t2]?" on":"")); d.title=t2; dots.appendChild(d); });
-    row.appendChild(dots);
+    const cov=el("div","cov"); let have=0;
+    STATUS_ORDER.forEach(tp=>{
+      const on=!!(g.status && g.status[tp]); if(on) have++;
+      const seg=el("span","seg"+(tp==="cover"?" cover":"")+(on?" on":""));
+      seg.title=t("t_"+tp)+(on?" ✓":" ✗");
+      cov.appendChild(seg);
+    });
+    const missing=STATUS_ORDER.filter(tp=>!(g.status && g.status[tp])).map(tp=>t("t_"+tp));
+    cov.classList.toggle("need", !(g.status && g.status.cover));
+    cov.title = have===5 ? t("cov_full")
+      : t("cov_count",have)+" · "+t("cov_missing")+": "+missing.join(", ");
+    row.appendChild(cov);
     row.addEventListener("click", ()=>selectGame(g,row));
     box.appendChild(row);
   });
@@ -354,7 +363,8 @@ async function applyArt(a,card){
   try{
     const r=await jpost("/api/apply",{account:state.account,appid:state.selected.appid,type:state.type,url:a.url});
     if(r.ok){
-      toast(t("applied",r.dest),"ok");
+      if(r.warn) toast(t("warn_"+r.warn),"bad");
+      else toast(t("applied",r.dest),"ok");
       document.querySelectorAll(".card.current img").forEach(img=>{
         img.src=`/img?account=${enc(state.account)}&appid=${state.selected.appid}&type=${state.type}&t=${Date.now()}`;
       });

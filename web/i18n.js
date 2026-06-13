@@ -6,11 +6,12 @@ const I18N = {
   ru: {
     tagline: "обложки для твоей библиотеки",
     account: "Аккаунт",
-    key_ok: "Ключ: OK",
+    key_ok: "API-ключ: OK",
     key_none: "Ключ: нет",
-    key_btn: "Ключ",
-    autofill: "Авто-дозаливка",
-    clean: "Очистка",
+    key_need: "Вставьте API-ключ",
+    key_btn: "API-ключ",
+    autofill: "Дозалить недостающее",
+    clean: "Удалить лишние",
     lang_name: "RU",
 
     tab_nonsteam: "Non-Steam",
@@ -41,10 +42,12 @@ const I18N = {
     load_variants_err: "Не загрузить варианты: ",
 
     applied: (f) => `Установлено: ${f} · перезапусти Steam`,
+    warn_competing: "Применено, но в этом слоте остался старый файл — Steam может показать его. Закрой Steam и повтори.",
+    warn_corrupt: "Файл скачался повреждённым — попробуй другой вариант.",
     apply_err: "Ошибка применения: ",
     games_err: "Не загрузить игры: ",
     steam_not_found: "Steam не найден",
-    no_key_hint: "Нет API-ключа — нажми «Ключ»",
+    no_key_hint: "Нужен API-ключ SteamGridDB — нажмите «Вставьте API-ключ» вверху справа",
     error: "Ошибка: ",
 
     autofill_title: "Авто-дозаливка недостающего",
@@ -72,16 +75,23 @@ const I18N = {
 
     disclaimer: "ArtDeck не аффилирован с Valve или SteamGridDB.",
     animated_badge: "ANIM",
+
+    cov_have: "Обложка есть",
+    cov_need: "Нужна обложка",
+    cov_full: "Все арты на месте",
+    cov_count: n => `${n}/5 артов`,
+    cov_missing: "не хватает",
   },
 
   en: {
     tagline: "cover art for your library",
     account: "Account",
-    key_ok: "Key: OK",
+    key_ok: "API key: OK",
     key_none: "Key: none",
-    key_btn: "Key",
-    autofill: "Auto-fill",
-    clean: "Cleanup",
+    key_need: "Add API key",
+    key_btn: "API key",
+    autofill: "Fill missing art",
+    clean: "Remove extras",
     lang_name: "EN",
 
     tab_nonsteam: "Non-Steam",
@@ -112,6 +122,8 @@ const I18N = {
     load_variants_err: "Couldn't load variants: ",
 
     applied: (f) => `Applied: ${f} · restart Steam`,
+    warn_competing: "Applied, but an old file remains in this slot — Steam may show it. Close Steam and retry.",
+    warn_corrupt: "The file downloaded corrupted — try another variant.",
     apply_err: "Apply error: ",
     games_err: "Couldn't load games: ",
     steam_not_found: "Steam not found",
@@ -143,20 +155,26 @@ const I18N = {
 
     disclaimer: "ArtDeck is not affiliated with Valve or SteamGridDB.",
     animated_badge: "ANIM",
+
+    cov_have: "Cover ready",
+    cov_need: "Needs cover",
+    cov_full: "All art present",
+    cov_count: n => `${n}/5 art`,
+    cov_missing: "missing",
   },
 };
 
-let LANG = localStorage.getItem("artdeck.lang") || "ru";
+let LANG = localStorage.getItem("artdeck.lang") || "en";
 
 function t(key, ...args) {
-  const dict = I18N[LANG] || I18N.ru;
+  const dict = I18N[LANG] || I18N.en;
   const v = dict[key];
   if (typeof v === "function") return v(...args);
   return v != null ? v : key;
 }
 
 function setLang(lang) {
-  LANG = I18N[lang] ? lang : "ru";
+  LANG = I18N[lang] ? lang : "en";
   localStorage.setItem("artdeck.lang", LANG);
 }
 

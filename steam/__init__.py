@@ -25,6 +25,7 @@ from steam.users import (
 from steam.icons import STEAM_IMAGE_PRIORITY, steam_game_image, game_icon_path
 from steam.vdf import parse_text_vdf
 from steam.customimage import register_custom_image, librarycache_json
+from steam.verify import verify_applied, valid_image
 
 __all__ = [
     "APP_DIR", "DEFAULT_STEAM_PATHS", "find_steam_path", "load_api_key",
@@ -38,4 +39,5 @@ __all__ = [
     "account_steamid64", "load_users", "account_name", "account_avatar_path",
     "account_infos", "STEAM_IMAGE_PRIORITY", "steam_game_image", "game_icon_path",
     "parse_text_vdf", "register_custom_image", "librarycache_json",
+    "verify_applied", "valid_image",
 ]

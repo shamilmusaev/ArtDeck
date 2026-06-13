@@ -297,7 +297,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     engine.register_custom_image(STEAM, uid, appid)
                 except Exception:
                     pass
-                return self._json({"ok": True, "dest": os.path.basename(dest)})
+                # пост-проверка: битый файл / конкурент в слоте → предупреждаем UI
+                warn = None
+                try:
+                    v = engine.verify_applied(grid, appid, t, dest)
+                    if not v["ok"]:
+                        warn = v["code"]
+                except Exception:
+                    pass
+                return self._json({"ok": True, "dest": os.path.basename(dest), "warn": warn})
             if u.path == "/api/clean":
                 removed = 0
                 for it in data.get("items", []):

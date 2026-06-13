@@ -15,13 +15,6 @@
 
 <header class="topbar">
   <div class="brand">
-    <span class="mark" aria-hidden="true">
-      <svg viewBox="0 0 40 40" fill="none">
-        <rect x="6" y="9" width="20" height="26" rx="4" transform="rotate(-9 16 22)" class="mk-back"/>
-        <rect x="14" y="7" width="20" height="26" rx="4" transform="rotate(7 24 20)" class="mk-front"/>
-        <path d="M21 26l3-9 3 9M21.9 23.4h4.2" class="mk-a"/>
-      </svg>
-    </span>
     <span class="word">Art<em>Deck</em></span>
     <span class="tag" data-i18n="tagline"></span>
   </div>
@@ -40,17 +33,15 @@
     </div>
 
     <button id="btn-autofill" class="btn primary">
-      <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>
       <span data-i18n="autofill"></span>
     </button>
     <button id="btn-clean" class="btn ghost">
-      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 4 9.5 13.5"/><path d="M9.5 13.5 6 17c-1 1-1 2.5 0 3.5s2.5 1 3.5 0l3.5-3.5z"/></svg>
       <span data-i18n="clean"></span>
     </button>
 
-    <span id="key-pill" class="pill">…</span>
-    <button id="btn-key" class="btn ghost square" title="API key">
-      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="16" r="3.5"/><path d="M10.5 13.5 20 4"/><path d="M16.5 5.5 19 8"/><path d="M14 8l2 2"/></svg>
+    <button id="btn-key" class="btn keybtn">
+      <span class="key-dot"></span>
+      <span id="key-label"></span>
     </button>
     <button id="btn-lang" class="btn ghost lang">RU</button>
   </div>
@@ -79,7 +70,7 @@
       <div class="match-search">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         <input id="search" type="text" autocomplete="off">
-        <select id="candidates" class="hidden"></select>
+        <div id="candidates" class="cand hidden"></div>
       </div>
     </div>
 
