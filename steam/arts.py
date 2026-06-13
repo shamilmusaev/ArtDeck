@@ -95,3 +95,20 @@ def apply_art(grid_dir, appid, art_type, url):
     dest = os.path.join(grid_dir, "%d%s%s" % (appid, suffix, ext))
     download(url, dest)
     return dest
+
+
+def revert_art(grid_dir, appid, art_type):
+    """Удаляет наш кастомный арт этого слота (все расширения). После этого Steam
+    показывает свой оригинал (для установленных игр) или серую заглушку (non-Steam).
+    Возвращает список удалённых файлов."""
+    suffix = ART_TYPES[art_type]["suffix"]
+    removed = []
+    for e in ART_EXTS:
+        p = os.path.join(grid_dir, "%d%s%s" % (appid, suffix, e))
+        if os.path.isfile(p):
+            try:
+                os.remove(p)
+                removed.append(os.path.basename(p))
+            except OSError:
+                pass
+    return removed

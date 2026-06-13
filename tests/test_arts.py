@@ -32,6 +32,17 @@ class ArtsTest(unittest.TestCase):
             self.assertTrue(dest.endswith("100p.png"))
             self.assertFalse(os.path.isfile(os.path.join(grid, "100p.jpg")))
 
+    def test_revert_art_removes_slot(self):
+        from steam.arts import revert_art
+        with tempfile.TemporaryDirectory() as grid:
+            open(os.path.join(grid, "100p.png"), "wb").close()
+            open(os.path.join(grid, "100p.webp"), "wb").close()
+            open(os.path.join(grid, "100_hero.png"), "wb").close()   # другой слот — не трогаем
+            removed = revert_art(grid, 100, "cover")
+            self.assertEqual(sorted(removed), ["100p.png", "100p.webp"])
+            self.assertFalse(os.path.isfile(os.path.join(grid, "100p.png")))
+            self.assertTrue(os.path.isfile(os.path.join(grid, "100_hero.png")))
+
 
     def test_list_arts_sorts_cover_600x900_first(self):
         raw = [

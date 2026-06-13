@@ -313,6 +313,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 except Exception:
                     pass
                 return self._json({"ok": True, "dest": os.path.basename(dest), "warn": warn})
+            if u.path == "/api/revert":
+                uid = data["account"]
+                appid = int(data["appid"])
+                t = data["type"]
+                _, grid = engine.account_paths(STEAM, uid)
+                removed = engine.revert_art(grid, appid, t)
+                return self._json({"ok": True, "removed": removed})
             if u.path == "/api/clean":
                 removed = 0
                 for it in data.get("items", []):

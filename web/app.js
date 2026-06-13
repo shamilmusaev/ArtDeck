@@ -69,6 +69,7 @@ async function init(){
       tab.classList.add("active");
       state.source = tab.dataset.src;
       $("#src-tabs").dataset.src = state.source;
+      $("#filter").value="";   // одинаковый старт вкладок: сбрасываем фильтр
       loadGames();
     });
   });
@@ -194,7 +195,11 @@ async function selectGame(g,row){
   }catch(e){ $("#match-sub").textContent=t("search_error")+e.message; }
 }
 
-function matchSubHtml(){ return `SteamGridDB: <b>${escapeHtml(state.matchName)}</b> · id ${state.gameId}`; }
+function matchSubHtml(){
+  return `<span class="mbadge src">SteamGridDB</span>`
+    + `<span class="mbadge name" title="${escapeHtml(state.matchName)}">${escapeHtml(state.matchName)}</span>`
+    + `<span class="mbadge id">id ${escapeHtml(String(state.gameId))}</span>`;
+}
 function setGame(id,name){ state.gameId=id; state.matchName=name; $("#match-sub").innerHTML=matchSubHtml(); updateCandLabel(); loadArts(); }
 
 /* ---------------- ручной поиск ---------------- */
@@ -302,9 +307,30 @@ function currentCard(cfg){
   img.onerror=()=>{ hasArt=false; w.innerHTML=""; w.appendChild(el("div","none",t("none_short"))); c.classList.add("nopic"); };
   img.src=src; w.appendChild(img);
   c.appendChild(el("div","cur-cap",t("current_cap")));
+  // кнопка возврата к оригиналу Steam — только если у нас есть свой кастомный арт этого типа
+  const hasCustom = !!(state.selected && state.selected.status && state.selected.status[state.type]);
+  if(hasCustom){
+    const rv=el("button","revert",
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span>${escapeHtml(t("revert"))}</span>`);
+    rv.title=t("revert_hint");
+    rv.addEventListener("click",ev=>{ ev.stopPropagation(); revertArt(); });
+    c.appendChild(rv);
+  }
   c.title=t("current_hint");
   c.addEventListener("click",()=>{ if(hasArt) openLight({url:src,thumb:src}); });
   return c;
+}
+
+async function revertArt(){
+  const g=state.selected; if(!g) return;
+  try{
+    const r=await jpost("/api/revert",{account:state.account,appid:g.appid,type:state.type});
+    if(r.ok){
+      toast((r.removed&&r.removed.length)?t("reverted"):t("nothing_to_revert"),"ok");
+      g.status[state.type]=false; renderGames();
+      loadArts();   // перерисует «Текущую»: теперь оригинал Steam или «нет»
+    }else toast(t("error")+(r.error||"?"),"bad");
+  }catch(e){ toast(t("error")+e.message,"bad"); }
 }
 
 function artCard(a,cfg,i){

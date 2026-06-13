@@ -12,7 +12,7 @@ from steam.sgdb import (
 )
 from steam.arts import (
     ART_TYPES, ART_EXTS, existing_art, art_status, apply_art,
-    list_arts, fetch_art_url,
+    list_arts, fetch_art_url, revert_art,
 )
 from steam.library import (
     NONSTEAM_MIN, compute_legacy_appid, load_shortcuts, list_games,
@@ -34,7 +34,7 @@ __all__ = [
     "API_BASE", "SGDBError", "SGDBAuthError", "api_get", "clean_name",
     "search_game_id", "search_games", "list_arts_raw", "download",
     "ART_TYPES", "ART_EXTS", "existing_art", "art_status", "apply_art",
-    "list_arts", "fetch_art_url", "NONSTEAM_MIN", "compute_legacy_appid",
+    "list_arts", "fetch_art_url", "revert_art", "NONSTEAM_MIN", "compute_legacy_appid",
     "load_shortcuts", "list_games", "find_orphans", "clean_orphans",
     "STEAM_TOOL_APPIDS", "list_libraries", "load_installed", "installed_games",
     "account_steamid64", "load_users", "account_name", "account_avatar_path",
