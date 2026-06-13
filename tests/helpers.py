@@ -48,7 +48,6 @@ def make_library(root, apps):
 def make_account(steam_root, uid, games, persona=None):
     """Создаёт userdata/<uid>/config/shortcuts.vdf для games (list для build_shortcuts_vdf).
     Если persona задан — пишет config/loginusers.vdf с этим именем для uid."""
-    import os
     cfg = os.path.join(steam_root, "userdata", uid, "config")
     os.makedirs(cfg, exist_ok=True)
     with open(os.path.join(cfg, "shortcuts.vdf"), "wb") as f:
