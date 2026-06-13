@@ -60,8 +60,19 @@ def list_arts(game_id, art_type, api_key, limit=40, animated=False):
             "style": a.get("style"),
             "animated": animated,
         })
+    # Раздел grids отдаёт и вертикальные (обложки), и горизонтальные (баннеры) вперемешку.
+    # Фильтруем по ориентации: обложка — вертикальная, баннер — горизонтальная.
+    def portrait(a):
+        return not (a["width"] and a["height"]) or a["height"] >= a["width"]
+
+    def landscape(a):
+        return not (a["width"] and a["height"]) or a["width"] > a["height"]
+
     if art_type == "cover":
+        items = [a for a in items if portrait(a)]
         items.sort(key=lambda a: 0 if (a["width"], a["height"]) == (600, 900) else 1)
+    elif art_type == "banner":
+        items = [a for a in items if landscape(a)]
     return [a for a in items if a["url"]][:limit]
 
 

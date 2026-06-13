@@ -35,7 +35,7 @@ class ArtsTest(unittest.TestCase):
 
     def test_list_arts_sorts_cover_600x900_first(self):
         raw = [
-            {"url": "u1", "thumb": "t1", "width": 920, "height": 430, "style": "alt"},
+            {"url": "u1", "thumb": "t1", "width": 1000, "height": 1500, "style": "alt"},
             {"url": "u2", "thumb": None, "width": 600, "height": 900, "style": "official"},
             {"url": None, "thumb": "t3", "width": 600, "height": 900, "style": "broken"},
         ]
@@ -45,6 +45,17 @@ class ArtsTest(unittest.TestCase):
         self.assertEqual(items[0]["thumb"], "u2")        # thumb falls back to url
         self.assertTrue(all(i["url"] for i in items))    # url=None item filtered out
         self.assertEqual(len(items), 2)
+
+    def test_orientation_filter_cover_vs_banner(self):
+        raw = [
+            {"url": "p", "thumb": "p", "width": 600, "height": 900, "style": "s"},   # вертикальная
+            {"url": "l", "thumb": "l", "width": 920, "height": 430, "style": "s"},   # горизонтальная
+        ]
+        with patch("steam.arts.list_arts_raw", lambda *a, **k: raw):
+            cov = list_arts(1, "cover", "key")
+            ban = list_arts(1, "banner", "key")
+        self.assertEqual([a["url"] for a in cov], ["p"])   # обложка — только вертикальная
+        self.assertEqual([a["url"] for a in ban], ["l"])   # баннер — только горизонтальная
 
     def test_list_arts_animated_requests_animated_type(self):
         captured = {}
