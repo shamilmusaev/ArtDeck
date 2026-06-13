@@ -4,6 +4,7 @@ import os
 import tempfile
 import threading
 import unittest
+import urllib.error
 import urllib.request
 from unittest.mock import patch
 
@@ -14,7 +15,11 @@ from tests.helpers import make_account, make_library, write_file
 def _get(srv, path):
     port = srv.server_address[1]
     req = urllib.request.urlopen("http://127.0.0.1:%d%s" % (port, path), timeout=5)
-    body = req.read().decode("utf-8")
+    raw = req.read()
+    try:
+        body = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        body = raw.decode("latin-1")
     return req.status, body
 
 
@@ -23,6 +28,7 @@ class ApiBase(unittest.TestCase):
         app.STEAM = steam_path
         srv = app.Server(("127.0.0.1", app.free_port()), app.Handler)
         threading.Thread(target=srv.serve_forever, daemon=True).start()
+        self.addCleanup(srv.server_close)
         self.addCleanup(srv.shutdown)
         return srv
 
@@ -72,6 +78,55 @@ class StateGamesTest(ApiBase):
             self.assertEqual(d["source"], "installed")
             self.assertEqual([g["name"] for g in d["games"]], ["Wallpaper Engine"])
             self.assertEqual(d["games"][0]["kind"], "steam")
+
+
+class ArtsAvatarIconTest(ApiBase):
+    def test_arts_passes_animated_flag(self):
+        captured = {}
+        def fake_list_arts(gid, t, key, limit=40, animated=False):
+            captured["animated"] = animated
+            return [{"url": "u", "thumb": "u", "width": 600, "height": 900,
+                     "style": "s", "animated": animated}]
+        with tempfile.TemporaryDirectory() as tmp:
+            srv = self.start(tmp)
+            with patch.object(app.engine, "load_api_key", lambda *_: "k"), \
+                 patch.object(app.engine, "list_arts", fake_list_arts):
+                code, body = _get(srv, "/api/arts?game_id=5&type=cover&animated=1")
+            self.assertEqual(code, 200)
+            self.assertTrue(captured["animated"])
+            self.assertTrue(json.loads(body)["arts"][0]["animated"])
+
+    def test_avatar_streams_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sid = int("11111111") + 0x0110000100000000
+            ac = os.path.join(tmp, "config", "avatarcache")
+            os.makedirs(ac)
+            with open(os.path.join(ac, "%d.png" % sid), "wb") as f:
+                f.write(b"\x89PNG\r\n")
+            srv = self.start(tmp)
+            code, body = _get(srv, "/api/avatar?account=11111111")
+            self.assertEqual(code, 200)
+            self.assertTrue(body.startswith("\x89PNG"))
+
+    def test_avatar_404_when_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            srv = self.start(tmp)
+            with self.assertRaises(urllib.error.HTTPError) as cm:
+                _get(srv, "/api/avatar?account=11111111")
+            self.assertEqual(cm.exception.code, 404)
+
+    def test_gameicon_for_shortcut(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ico = os.path.join(tmp, "alien.ico")
+            with open(ico, "wb") as f:
+                f.write(b"ICON")
+            make_account(tmp, "999",
+                         [{"appid": 2468090731, "AppName": "Alien", "Exe": "a.exe",
+                           "icon": ico}])
+            srv = self.start(tmp)
+            code, body = _get(srv, "/api/gameicon?account=999&appid=2468090731")
+            self.assertEqual(code, 200)
+            self.assertEqual(body, "ICON")
 
 
 if __name__ == "__main__":

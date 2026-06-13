@@ -75,6 +75,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self._send_index()
             if path == "/img":
                 return self._serve_current(q)
+            if path == "/api/avatar":
+                return self._serve_avatar(q)
+            if path == "/api/gameicon":
+                return self._serve_gameicon(q)
             if path.startswith("/api/"):
                 return self._api_get(path, q)
             # статика из web/
@@ -131,8 +135,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             except ValueError:
                 return self._err("bad id", 400)
             t = q.get("type", ["cover"])[0]
+            animated = q.get("animated", ["0"])[0] in ("1", "true", "yes")
             try:
-                return self._json({"arts": engine.list_arts(gid, t, key)})
+                return self._json({"arts": engine.list_arts(gid, t, key, animated=animated)})
             except engine.SGDBError as e:
                 return self._err(e, 502)
         if path == "/api/orphans":
@@ -174,6 +179,37 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._err("bad", 400)
         _, grid = engine.account_paths(STEAM, uid)
         p = engine.existing_art(grid, int(appid), engine.ART_TYPES[t]["suffix"])
+        if not p or not os.path.isfile(p):
+            return self._err("none", 404)
+        self._send_file(p, cache=False)
+
+    def _serve_avatar(self, q):
+        uid = q.get("account", [None])[0]
+        if not (uid and STEAM):
+            return self._err("bad", 400)
+        p = engine.account_avatar_path(STEAM, uid)
+        if not p:
+            return self._err("none", 404)
+        self._send_file(p, cache=False)
+
+    def _game_icon_file(self, uid, appid):
+        """Путь к иконке игры: сперва ищем среди non-Steam ярлыков аккаунта,
+        иначе считаем Steam-игрой и берём из librarycache."""
+        vdf, _ = engine.account_paths(STEAM, uid)
+        for g in engine.load_shortcuts(vdf):
+            if g["appid"] == appid:
+                return engine.game_icon_path(STEAM, g)
+        return engine.steam_game_image(STEAM, appid)
+
+    def _serve_gameicon(self, q):
+        uid = q.get("account", [None])[0]
+        try:
+            appid = int(q.get("appid", [0])[0])
+        except ValueError:
+            return self._err("bad id", 400)
+        if not (uid and STEAM):
+            return self._err("bad", 400)
+        p = self._game_icon_file(uid, appid)
         if not p or not os.path.isfile(p):
             return self._err("none", 404)
         self._send_file(p, cache=False)
