@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Steam Art</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="bg">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+</div>
+
+<header class="topbar glass">
+  <div class="brand"><span class="logo">◆</span> Steam<span class="accent">Art</span></div>
+  <div class="controls">
+    <div class="select-wrap">
+      <span class="lbl">Аккаунт</span>
+      <select id="account"></select>
+    </div>
+    <button id="btn-autofill" class="btn">⚡ Авто-дозаливка</button>
+    <button id="btn-clean" class="btn ghost">🧹 Очистка</button>
+    <span id="key-pill" class="pill">…</span>
+    <button id="btn-key" class="btn ghost small">Ключ</button>
+  </div>
+</header>
+
+<main>
+  <aside class="sidebar glass">
+    <div class="search-box">
+      <input id="filter" type="text" placeholder="Поиск игры…" autocomplete="off">
+    </div>
+    <div id="games" class="game-list"></div>
+  </aside>
+
+  <section class="content">
+    <div class="match glass">
+      <div class="match-head">
+        <div>
+          <div class="match-title" id="match-name">Выбери игру слева</div>
+          <div class="match-sub" id="match-sub"></div>
+        </div>
+        <div class="match-search">
+          <input id="search" type="text" placeholder="Найти другую игру на SteamGridDB…" autocomplete="off">
+          <select id="candidates" class="hidden"></select>
+        </div>
+      </div>
+    </div>
+
+    <div id="tabs" class="tabs"></div>
+
+    <div id="grid" class="art-grid"></div>
+    <div id="empty" class="empty hidden">Выбери игру, чтобы увидеть варианты обложек ✨</div>
+  </section>
+</main>
+
+<div id="toasts" class="toasts"></div>
+
+<!-- overlay прогресса авто-дозаливки -->
+<div id="overlay" class="overlay hidden">
+  <div class="overlay-card glass-strong">
+    <div class="spinner"></div>
+    <div class="ov-title">Авто-дозаливка артов</div>
+    <div class="ov-game" id="ov-game">Подготовка…</div>
+    <div class="bar"><div class="bar-fill" id="bar-fill"></div></div>
+    <div class="ov-count" id="ov-count"></div>
+  </div>
+</div>
+
+<!-- модалка -->
+<div id="modal" class="overlay hidden">
+  <div class="overlay-card glass-strong modal-card">
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
