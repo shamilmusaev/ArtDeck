@@ -28,6 +28,20 @@ class PathsTest(unittest.TestCase):
         finally:
             del os.environ["STEAMGRIDDB_API_KEY"]
 
+    def test_load_api_key_from_file(self):
+        import steam.paths as paths
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "steam_art.key"), "w", encoding="utf-8") as f:
+                f.write("  filekey123  ")
+            env_backup = os.environ.pop("STEAMGRIDDB_API_KEY", None)
+            try:
+                with patch.object(paths, "APP_DIR", tmp):
+                    self.assertEqual(load_api_key(None), "filekey123")
+            finally:
+                if env_backup is not None:
+                    os.environ["STEAMGRIDDB_API_KEY"] = env_backup
+
 
 if __name__ == "__main__":
     unittest.main()
