@@ -57,11 +57,20 @@ class LibraryTest(unittest.TestCase):
 class FacadeTest(unittest.TestCase):
     def test_public_api_exposed(self):
         import steam
+        self.assertTrue(steam.__all__, "steam.__all__ must be non-empty")
+        for name in steam.__all__:
+            self.assertTrue(hasattr(steam, name), "missing: " + name)
+
+    def test_key_engine_names_present(self):
+        import steam
+        # имена, на которые опираются CLI и сервер — должны существовать
         for name in ("find_steam_path", "load_api_key", "list_accounts",
                      "account_paths", "list_games", "clean_name", "ART_TYPES",
                      "search_games", "list_arts", "SGDBError", "SGDBAuthError",
                      "find_orphans", "existing_art", "load_shortcuts", "art_status",
-                     "search_game_id", "fetch_art_url", "apply_art"):
+                     "search_game_id", "fetch_art_url", "apply_art", "download",
+                     "clean_orphans", "compute_legacy_appid"):
+            self.assertIn(name, steam.__all__, "not in __all__: " + name)
             self.assertTrue(hasattr(steam, name), "missing: " + name)
 
 
