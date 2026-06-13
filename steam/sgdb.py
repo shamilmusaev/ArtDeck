@@ -47,7 +47,7 @@ def api_get(path, api_key, params=None, retries=3):
 
 
 def clean_name(name):
-    for ch in ("™", "®", "©"):  # TM R C
+    for ch in ("™", "®", "©"):  # ™ ® ©
         name = name.replace(ch, "")
     return " ".join(name.split())
 
