@@ -50,13 +50,18 @@ body{
   position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.04;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
+/* фоновые свечения берут цвет из выбранной игры (--amb-*), плавно перетекая.
+   @property делает custom-свойства анимируемыми (Chromium/WebView2). */
+@property --amb-1{syntax:"<color>"; inherits:true; initial-value:rgba(255,93,82,.5)}
+@property --amb-2{syntax:"<color>"; inherits:true; initial-value:rgba(84,224,199,.4)}
 .aura{position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden}
-.aura span{position:absolute; border-radius:50%; filter:blur(90px); opacity:.5}
 /* статичные (без анимации) — огромные размытые слои нельзя крутить каждый кадр */
+.aura span{position:absolute; border-radius:50%; filter:blur(90px); opacity:.5;
+  transition:--amb-1 .8s ease, --amb-2 .8s ease}
 .aura-a{width:46vw; height:46vw; top:-16vw; right:-8vw;
-  background:radial-gradient(circle,rgba(255,93,82,.5),transparent 65%)}
+  background:radial-gradient(circle,var(--amb-1),transparent 65%)}
 .aura-b{width:40vw; height:40vw; bottom:-16vw; left:-10vw;
-  background:radial-gradient(circle,rgba(84,224,199,.4),transparent 65%)}
+  background:radial-gradient(circle,var(--amb-2),transparent 65%)}
 .aura-c{width:30vw; height:30vw; top:30%; left:42%;
   background:radial-gradient(circle,rgba(255,138,75,.25),transparent 65%)}
 
@@ -233,14 +238,14 @@ main{
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .match-sub{font-size:12.5px; color:var(--dim); margin-top:6px;
   display:flex; flex-wrap:wrap; align-items:center; gap:6px}
-.match-sub b{color:var(--mint); font-weight:600}
+.match-sub b{color:var(--txt); font-weight:600}
 /* совпадение SteamGridDB — компактными бейджами вместо строки текста */
 .mbadge{display:inline-flex; align-items:center; height:23px; padding:0 9px; border-radius:7px;
   font-size:11.5px; font-weight:600; line-height:1; white-space:nowrap;
   background:var(--ink-3); border:1px solid var(--line); color:var(--dim)}
 .mbadge.src{text-transform:uppercase; letter-spacing:.05em; font-size:10px; color:var(--faint)}
 .mbadge.name{max-width:340px; overflow:hidden; text-overflow:ellipsis; display:inline-block;
-  line-height:21px; color:var(--mint); background:var(--mint-dim); border-color:rgba(84,224,199,.32)}
+  line-height:21px; color:var(--txt); background:var(--ink-3); border-color:var(--line-2)}
 .mbadge.id{font-family:var(--mono); font-size:10.5px; font-weight:500; color:var(--faint)}
 .match-search{position:relative; display:flex; align-items:center; gap:8px; width:min(40%,360px);
   padding:0 12px; height:40px; background:var(--ink); border:1px solid var(--line); border-radius:11px}
@@ -282,10 +287,10 @@ main{
 .cand-opt-id{font-family:var(--mono); font-size:10.5px; color:var(--faint); flex:0 0 auto}
 .cand-opt:hover{background:var(--ink-3)}
 .cand-opt:hover .cand-opt-id{color:var(--dim)}
-.cand-opt.sel{background:var(--mint-dim)}
-.cand-opt.sel .cand-opt-name,.cand-opt.sel .cand-opt-id{color:var(--mint)}
+.cand-opt.sel{background:rgba(255,93,82,.13)}
+.cand-opt.sel .cand-opt-name,.cand-opt.sel .cand-opt-id{color:var(--coral)}
 .cand-opt.sel::before{content:""; position:absolute; left:0; top:8px; bottom:8px; width:2px;
-  border-radius:0 2px 2px 0; background:var(--mint)}
+  border-radius:0 2px 2px 0; background:var(--coral)}
 
 .toolbar{flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:16px}
 .type-tabs{display:flex; gap:6px; flex-wrap:wrap}
@@ -320,8 +325,12 @@ main{
   transition:border-color .16s, transform .16s, box-shadow .16s;
 }
 @keyframes rise{to{opacity:1; transform:none}}
-.card:hover{transform:translateY(-3px); border-color:var(--mint);
-  box-shadow:0 0 0 1px var(--mint), 0 16px 40px -20px rgba(84,224,199,.5)}
+/* hover — нейтральный (как .game:hover), но с затемнением обложки. Бренд-цвета
+   бережём: коралл — выбор/применено; мята — ТОЛЬКО метр в списке игр и индикатор API. */
+.imgwrap::before{content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:rgba(4,5,8,.55); opacity:0; transition:opacity .16s ease}
+.card:hover{transform:translateY(-3px); border-color:var(--line-2); box-shadow:var(--shadow)}
+.card:hover .imgwrap::before{opacity:1}
 .card.sel{border-color:var(--coral); box-shadow:0 0 0 1px var(--coral), 0 16px 40px -18px rgba(255,93,82,.6)}
 /* применённую (коралл) карточку при наведении не перекрашиваем в мяту */
 .card.sel:hover{border-color:var(--coral); box-shadow:0 0 0 1px var(--coral), 0 18px 44px -18px rgba(255,93,82,.7)}
@@ -371,25 +380,23 @@ main{
    Steam. Оформлена как арт «в оправе»: мятная рамка поверх картинки, мягкое
    многослойное свечение, премиальный бейдж. */
 .card.current{
-  cursor:pointer; border-color:var(--mint);
+  cursor:pointer; border-color:rgba(255,255,255,.22);
   box-shadow:
-    0 0 0 1px rgba(84,224,199,.5),
-    0 16px 40px -20px rgba(84,224,199,.55),
-    0 0 64px -28px rgba(84,224,199,.55);
+    0 0 0 1px rgba(255,255,255,.12),
+    0 18px 44px -20px rgba(0,0,0,.7);
 }
 .card.current:hover{
   transform:translateY(-4px);
   box-shadow:
-    0 0 0 1px var(--mint),
-    0 24px 54px -18px rgba(84,224,199,.75),
-    0 0 84px -26px rgba(84,224,199,.7);
+    0 0 0 1px rgba(255,255,255,.3),
+    0 24px 54px -18px rgba(0,0,0,.82);
 }
 .card.current .badge{
   z-index:6; display:inline-flex; align-items:center; gap:6px;
-  background:linear-gradient(135deg, var(--mint), #34c6aa); color:#06231e;
-  box-shadow:0 6px 16px -6px rgba(84,224,199,.8);
+  background:rgba(233,234,240,.94); color:#0a0b10;
+  box-shadow:0 6px 16px -8px rgba(0,0,0,.7);
 }
-.card.current .badge::before{content:""; width:6px; height:6px; border-radius:50%; background:#06231e}
+.card.current .badge::before{content:""; width:6px; height:6px; border-radius:50%; background:#0a0b10}
 /* кнопка «вернуть оригинал» — иконка в углу, подпись выезжает на hover */
 .card.current .revert{
   position:absolute; top:9px; right:9px; z-index:6;
@@ -406,9 +413,9 @@ main{
 .cur-cap{
   position:absolute; left:0; right:0; bottom:0; z-index:5;
   padding:20px 10px 9px; text-align:center;
-  font-size:11px; font-weight:700; letter-spacing:.04em; color:var(--mint);
-  text-shadow:0 1px 6px rgba(5,16,14,.9);
-  background:linear-gradient(transparent, rgba(5,16,14,.85) 70%);
+  font-size:11px; font-weight:700; letter-spacing:.04em; color:var(--txt);
+  text-shadow:0 1px 6px rgba(0,0,0,.9);
+  background:linear-gradient(transparent, rgba(5,6,9,.85) 70%);
   pointer-events:none;
 }
 .card.current.nopic{cursor:default; border-color:var(--line-2); box-shadow:0 0 0 1px var(--line-2)}

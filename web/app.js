@@ -181,6 +181,7 @@ async function selectGame(g,row){
   state.selected=g; state.gameId=null; state.matchName=null;
   document.querySelectorAll(".game.active").forEach(r=>r.classList.remove("active"));
   if(row) row.classList.add("active");
+  ambientFromImage(`/api/gameicon?account=${enc(state.account)}&appid=${g.appid}`);
   $("#match-name").textContent=g.name;
   $("#match-sub").textContent=t("searching");
   $("#candidates").classList.add("hidden");
@@ -500,3 +501,50 @@ function modal(title,bodyHtml,actions){
 }
 function closeModal(){ $("#modal").classList.add("hidden"); }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
+
+/* ---------------- амбиентный фон по иконке выбранной игры ---------------- */
+function vivid(c){                          // поднять яркость тусклого цвета, сохранив оттенок
+  const mx = Math.max(c[0], c[1], c[2], 1);
+  const k = Math.min(225 / mx, 2.6);
+  return [Math.min(255, Math.round(c[0]*k)),
+          Math.min(255, Math.round(c[1]*k)),
+          Math.min(255, Math.round(c[2]*k))];
+}
+function setAmbient(c1, c2){
+  const a = vivid(c1), b = vivid(c2);
+  const r = document.documentElement.style;
+  r.setProperty("--amb-1", `rgba(${a[0]},${a[1]},${a[2]},.55)`);
+  r.setProperty("--amb-2", `rgba(${b[0]},${b[1]},${b[2]},.42)`);
+}
+function resetAmbient(){
+  const r = document.documentElement.style;
+  r.removeProperty("--amb-1"); r.removeProperty("--amb-2");  // вернуть коралл/мяту по умолчанию
+}
+let _ambToken = 0;
+function ambientFromImage(src){
+  const token = ++_ambToken;
+  const img = new Image();
+  img.onload = ()=>{
+    if(token !== _ambToken) return;            // выбрали другую игру — отменяем
+    try{
+      const n = 24, cv = document.createElement("canvas"); cv.width = cv.height = n;
+      const ctx = cv.getContext("2d", {willReadFrequently:true});
+      ctx.drawImage(img, 0, 0, n, n);
+      const d = ctx.getImageData(0, 0, n, n).data;
+      let r=0, g=0, b=0, cnt=0, best=null, bestScore=-1;
+      for(let i=0;i<d.length;i+=4){
+        if(d[i+3] < 128) continue;             // прозрачные пиксели мимо
+        const R=d[i], G=d[i+1], B=d[i+2];
+        r+=R; g+=G; b+=B; cnt++;
+        const mx=Math.max(R,G,B), mn=Math.min(R,G,B);
+        const score=(mx-mn)*0.75 + mx*0.25;    // самый сочный пиксель — акцент
+        if(score>bestScore){ bestScore=score; best=[R,G,B]; }
+      }
+      if(!cnt) return;
+      const avg=[Math.round(r/cnt), Math.round(g/cnt), Math.round(b/cnt)];
+      setAmbient(best||avg, avg);
+    }catch(_){ /* canvas tainted/ошибка — оставляем как есть */ }
+  };
+  img.onerror = ()=>{ if(token===_ambToken) resetAmbient(); };  // нет иконки — дефолт
+  img.src = src;
+}
