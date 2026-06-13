@@ -34,6 +34,7 @@ const el = (tag,cls,html)=>{const e=document.createElement(tag); if(cls)e.classN
 async function jget(u){const r=await fetch(u); if(!r.ok) throw new Error((await r.json().catch(()=>({error:r.status}))).error||r.status); return r.json();}
 async function jpost(u,b){const r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}); return r.json();}
 const enc = encodeURIComponent;
+const IS_VIDEO = u => /\.(webm|mp4)(\?|$)/i.test(u || "");
 
 /* ---------------- i18n статика ---------------- */
 function applyStatic(){
@@ -52,7 +53,8 @@ async function init(){
   buildTabs();
   $("#filter").addEventListener("input", renderGames);
   $("#search").addEventListener("keydown", e=>{ if(e.key==="Enter") doSearch(); });
-  $("#candidates").addEventListener("change", onCandidate);
+  document.addEventListener("click", e=>{ const b=$("#candidates"); if(b && !b.contains(e.target)) candOpen(false); });
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape") candOpen(false); });
   $("#btn-autofill").addEventListener("click", autofill);
   $("#btn-clean").addEventListener("click", openClean);
   $("#btn-key").addEventListener("click", editKey);
@@ -181,7 +183,7 @@ async function selectGame(g,row){
 }
 
 function matchSubHtml(){ return `SteamGridDB: <b>${escapeHtml(state.matchName)}</b> · id ${state.gameId}`; }
-function setGame(id,name){ state.gameId=id; state.matchName=name; $("#match-sub").innerHTML=matchSubHtml(); loadArts(); }
+function setGame(id,name){ state.gameId=id; state.matchName=name; $("#match-sub").innerHTML=matchSubHtml(); updateCandLabel(); loadArts(); }
 
 /* ---------------- ручной поиск ---------------- */
 async function doSearch(){
@@ -195,18 +197,42 @@ async function doSearch(){
     else toast(t("nothing_found"),"bad");
   }catch(e){ toast(t("error")+e.message,"bad"); }
 }
+const CHEV='<svg class="cand-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
 function fillCandidates(){
-  const sel=$("#candidates"); sel.innerHTML="";
-  state.candidates.forEach(g=>sel.appendChild(el("option",null,`${escapeHtml(g.name)} (id ${g.id})`)));
-  sel.classList.toggle("hidden", state.candidates.length===0);
+  const box=$("#candidates"); box.innerHTML="";
+  if(!state.candidates.length){ box.classList.add("hidden"); box.classList.remove("open"); return; }
+  const trig=el("button","cand-trigger"); trig.type="button"; trig.title=t("found_n",state.candidates.length);
+  trig.innerHTML=`<span class="cand-count">${state.candidates.length}</span>${CHEV}`;
+  trig.addEventListener("click", e=>{ e.stopPropagation(); candOpen(!box.classList.contains("open")); });
+  const menu=el("div","cand-menu");
+  state.candidates.forEach(g=>{
+    const o=el("button","cand-opt"); o.type="button";
+    o.innerHTML=`<span class="cand-opt-name">${escapeHtml(g.name)}</span><span class="cand-opt-id">id ${escapeHtml(String(g.id))}</span>`;
+    o.addEventListener("click", ()=>{ setGame(g.id,g.name); candOpen(false); });
+    menu.appendChild(o);
+  });
+  box.appendChild(trig); box.appendChild(menu);
+  box.classList.remove("hidden"); box.classList.remove("open");
+  updateCandLabel();
 }
-function onCandidate(){ const i=$("#candidates").selectedIndex; if(i>=0&&i<state.candidates.length){ const g=state.candidates[i]; setGame(g.id,g.name); } }
+function updateCandLabel(){
+  const box=$("#candidates"); if(!box || box.classList.contains("hidden")) return;
+  box.querySelectorAll(".cand-opt").forEach((o,i)=>{
+    const g=state.candidates[i];
+    o.classList.toggle("sel", !!g && String(g.id)===String(state.gameId));
+  });
+}
+function candOpen(open){
+  const box=$("#candidates"); if(!box || box.classList.contains("hidden")) return;
+  box.classList.toggle("open", open);
+  if(open){ const s=box.querySelector(".cand-opt.sel"); if(s) s.scrollIntoView({block:"nearest"}); }
+}
 
 /* ---------------- вкладки типов ---------------- */
 function buildTabs(){
   const box=$("#tabs"); box.innerHTML="";
   TYPES.forEach(tp=>{
-    const tab=el("div","tab"+(tp.id===state.type?" active":""),(ICONS[tp.id]||"")+"<span>"+t("t_"+tp.id)+"</span>");
+    const tab=el("div","tab"+(tp.id===state.type?" active":""),"<span>"+t("t_"+tp.id)+"</span>");
     tab.addEventListener("click", ()=>{
       state.type=tp.id;
       document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
@@ -267,15 +293,25 @@ function currentCard(cfg){
 function artCard(a,cfg,i){
   const{c,w}=cardShell(cfg,i); c.classList.add("loading");
   if(a.animated) c.appendChild(el("span","badge anim",t("animated_badge")));
-  const img=el("img"); img.style.objectFit=cfg.fit;
-  img.addEventListener("load",()=>c.classList.remove("loading"));
-  img.addEventListener("error",()=>{
-    if(!img.dataset.fb && a.url && a.url!==a.thumb){ img.dataset.fb="1"; img.src=a.url; }
-    else { c.classList.remove("loading"); w.innerHTML=""; w.appendChild(el("div","none","⚠")); }
-  });
-  img.src=a.thumb;
-  if(img.complete && img.naturalWidth>0) c.classList.remove("loading");
-  w.appendChild(img);
+  const done=()=>c.classList.remove("loading");
+  const fail=()=>{ c.classList.remove("loading"); w.innerHTML=""; w.appendChild(el("div","none","⚠")); };
+  if(IS_VIDEO(a.thumb)){
+    // лёгкое .webm-превью анимации (десятки КБ), полный url не грузим в сетке
+    const v=el("video"); v.muted=true; v.loop=true; v.autoplay=true;
+    v.setAttribute("playsinline",""); v.style.objectFit=cfg.fit;
+    v.addEventListener("loadeddata",done); v.addEventListener("error",fail);
+    v.src=a.thumb; w.appendChild(v);
+  } else {
+    const img=el("img"); img.style.objectFit=cfg.fit;
+    img.addEventListener("load",done);
+    img.addEventListener("error",()=>{
+      if(!img.dataset.fb && a.url && a.url!==a.thumb){ img.dataset.fb="1"; img.src=a.url; }
+      else fail();
+    });
+    img.src=a.thumb;
+    if(img.complete && img.naturalWidth>0) done();
+    w.appendChild(img);
+  }
   c.appendChild(meta(a));
   const acts=el("div","card-actions");
   const peek=el("button","peek",PEEK); peek.title=t("preview");
@@ -298,7 +334,13 @@ function meta(a){
 function openLight(a){
   state.selectedArt=a;
   const stage=$("#light-stage"); stage.innerHTML="";
-  const img=el("img"); img.src=a.url||a.thumb; stage.appendChild(img);
+  if(IS_VIDEO(a.thumb)){
+    // анимацию показываем лёгким .webm-превью, тяжёлый url качаем только при установке
+    const v=el("video"); v.src=a.thumb; v.muted=true; v.loop=true; v.autoplay=true; v.controls=false;
+    v.setAttribute("playsinline",""); stage.appendChild(v);
+  } else {
+    const img=el("img"); img.src=a.url||a.thumb; stage.appendChild(img);
+  }
   const dims=(a.width&&a.height)?`${a.width}×${a.height}`:"";
   $("#light-meta").innerHTML = dims + (a.style?` · <b>${escapeHtml(a.style)}</b>`:"") + (a.animated?` · ${t("animated_badge")}`:"");
   const ap=$("#light-apply"); ap.textContent=t("apply"); ap.onclick=()=>{ applyArt(a,null); closeLight(); };
@@ -381,9 +423,9 @@ async function openClean(){
 /* ---------------- ключ ---------------- */
 function setKey(ok){
   state.keyOk=ok;
-  const p=$("#key-pill");
-  p.className="pill "+(ok?"ok":"bad");
-  p.textContent = ok? t("key_ok") : t("key_none");
+  const b=$("#btn-key");
+  b.classList.remove("ok","bad"); b.classList.add(ok?"ok":"bad");
+  $("#key-label").textContent = ok ? t("key_ok") : t("key_need");
 }
 function editKey(){
   modal(t("key_title"),

@@ -75,13 +75,6 @@ body{
   border-bottom:1px solid var(--line);
 }
 .brand{display:flex; align-items:center; gap:12px; min-width:0}
-.mark{width:38px; height:38px; flex:0 0 auto; filter:drop-shadow(0 6px 14px rgba(255,93,82,.35))}
-.mark svg{width:100%; height:100%}
-.mk-back{fill:var(--ink-3); stroke:var(--line-2); stroke-width:1.4}
-.mk-front{fill:url(#none); stroke:none}
-.mark svg .mk-front{fill:#1b1e29}
-.mark svg{}
-.mk-a{stroke:var(--coral); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; fill:none}
 .word{font-family:var(--display); font-weight:800; font-size:23px; letter-spacing:-.02em; line-height:1}
 .word em{font-style:normal; color:var(--coral)}
 .tag{font-size:12px; color:var(--faint); margin-left:6px; letter-spacing:.01em;
@@ -109,18 +102,23 @@ body{
 .btn.primary:hover{filter:brightness(1.06)}
 .btn.ghost{background:transparent}
 .btn.ghost:hover{background:var(--ink-3)}
-.btn.square{width:38px; padding:0; justify-content:center}
 .btn.lang{width:46px; justify-content:center; font-family:var(--mono); font-weight:600; letter-spacing:.04em; font-size:12.5px; color:var(--dim)}
 
-.pill{
-  display:inline-flex; align-items:center; gap:7px;
-  height:30px; padding:0 11px; border-radius:999px;
-  font-size:12px; font-weight:600; color:var(--dim);
-  background:var(--ink-2); border:1px solid var(--line);
+/* Кнопка API-ключа = статус + действие в одном. Зелёная точка = ключ есть;
+   нет ключа → коралловая, пульсирует, прямо зовёт вставить ключ. */
+.keybtn{font-size:13px}
+.keybtn .key-dot{width:8px; height:8px; border-radius:50%; flex:0 0 auto; background:var(--faint)}
+.keybtn.ok{color:var(--dim)}
+.keybtn.ok .key-dot{background:var(--mint); box-shadow:0 0 0 3px var(--mint-dim)}
+.keybtn.bad{
+  color:#ffe6e3; border-color:rgba(255,93,82,.6); background:rgba(255,93,82,.14); font-weight:700;
 }
-.pill::before{content:""; width:7px; height:7px; border-radius:50%; background:var(--faint)}
-.pill.ok{color:var(--mint)} .pill.ok::before{background:var(--mint); box-shadow:0 0 9px var(--mint)}
-.pill.bad{color:var(--coral)} .pill.bad::before{background:var(--coral); box-shadow:0 0 9px var(--coral)}
+.keybtn.bad:hover{background:rgba(255,93,82,.24); border-color:rgba(255,93,82,.85)}
+.keybtn.bad .key-dot{background:var(--coral); animation:keypulse 1.5s ease-in-out infinite}
+@keyframes keypulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(255,93,82,.55)}
+  50%{box-shadow:0 0 0 6px rgba(255,93,82,0)}
+}
 
 /* ---- кастомный дропдаун аккаунта (нативный select не умеет аватарки) ---- */
 .acct{position:relative}
@@ -230,10 +228,45 @@ main{
 .match-search:focus-within{border-color:var(--line-2)}
 .match-search .ic{width:15px; height:15px; color:var(--faint)}
 .match-search input{flex:1; min-width:0; background:none; border:none; outline:none; color:var(--txt); font-size:13px}
-.match-search select{
-  position:absolute; top:calc(100% + 6px); left:0; right:0; max-height:240px;
-  background:var(--ink-2); color:var(--txt); border:1px solid var(--line-2); border-radius:10px; padding:4px; font-size:13px;
+/* кастомный список кандидатов SteamGridDB (нативный <select> не стилизуется).
+   Свёрнут — компактная кнопка-счётчик в строке поиска; раскрытое меню всплывает
+   поверх контента ТОЛЬКО когда открыто, поэтому ничего постоянно не перекрывает. */
+.cand{flex:0 0 auto; display:flex; align-items:center}
+.cand.hidden{display:none}
+.cand-trigger{
+  display:flex; align-items:center; gap:3px; height:26px; padding:0 6px 0 9px;
+  background:var(--ink-3); color:var(--dim); border:1px solid var(--line-2); border-radius:7px;
+  font-family:var(--mono); font-size:11px; cursor:pointer; transition:.14s ease;
 }
+.cand-trigger:hover{color:var(--txt); border-color:rgba(255,93,82,.45)}
+.cand.open .cand-trigger{color:var(--coral); border-color:rgba(255,93,82,.55); background:rgba(255,93,82,.1)}
+.cand-count{font-weight:600}
+.cand-chev{width:13px; height:13px; flex:0 0 auto; transition:transform .2s ease}
+.cand.open .cand-chev{transform:rotate(180deg)}
+
+.cand-menu{
+  position:absolute; top:calc(100% + 9px); left:0; right:0; z-index:40; max-height:264px; overflow-y:auto;
+  padding:5px; background:var(--ink-2); border:1px solid var(--line-2); border-radius:12px;
+  box-shadow:var(--shadow); transform-origin:top; opacity:0; transform:translateY(-6px) scale(.985);
+  pointer-events:none; transition:opacity .15s ease, transform .15s ease;
+}
+.cand.open .cand-menu{opacity:1; transform:none; pointer-events:auto}
+.cand-menu::-webkit-scrollbar{width:9px}
+.cand-menu::-webkit-scrollbar-thumb{background:var(--line-2); border-radius:9px; border:2px solid var(--ink-2)}
+
+.cand-opt{
+  position:relative; width:100%; display:flex; align-items:center; gap:10px; padding:8px 11px;
+  border:none; border-radius:8px; background:none; color:var(--dim);
+  font-family:var(--ui); font-size:13px; text-align:left; cursor:pointer; transition:background .12s ease;
+}
+.cand-opt-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--txt)}
+.cand-opt-id{font-family:var(--mono); font-size:10.5px; color:var(--faint); flex:0 0 auto}
+.cand-opt:hover{background:var(--ink-3)}
+.cand-opt:hover .cand-opt-id{color:var(--dim)}
+.cand-opt.sel{background:var(--mint-dim)}
+.cand-opt.sel .cand-opt-name,.cand-opt.sel .cand-opt-id{color:var(--mint)}
+.cand-opt.sel::before{content:""; position:absolute; left:0; top:8px; bottom:8px; width:2px;
+  border-radius:0 2px 2px 0; background:var(--mint)}
 
 .toolbar{flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:16px}
 .type-tabs{display:flex; gap:6px; flex-wrap:wrap}
@@ -242,7 +275,6 @@ main{
   font-weight:600; font-size:13px; color:var(--dim); cursor:pointer;
   background:var(--ink-2); border:1px solid var(--line); transition:.14s ease;
 }
-.tab .ic{width:16px; height:16px}
 .tab:hover{color:var(--txt); border-color:var(--line-2)}
 .tab.active{color:var(--txt); background:var(--ink-3); border-color:rgba(255,93,82,.5)}
 .tab.active::after{content:""}
@@ -273,7 +305,7 @@ main{
 .card.sel{border-color:var(--coral); box-shadow:0 0 0 1px var(--coral), 0 16px 40px -18px rgba(255,93,82,.6)}
 .imgwrap{position:relative; width:100%; aspect-ratio:var(--ar,2/3); background:
   linear-gradient(135deg,#14161e,#0d0f15); overflow:hidden}
-.imgwrap img{position:absolute; inset:0; width:100%; height:100%; display:block}
+.imgwrap img,.imgwrap video{position:absolute; inset:0; width:100%; height:100%; display:block}
 .card .none{position:absolute; inset:0; display:grid; place-items:center; color:var(--faint); font-size:12px}
 
 /* shimmer на загрузке */
@@ -325,7 +357,7 @@ main{
   background:var(--ink-2); border:1px solid var(--line-2); border-radius:18px; overflow:hidden; box-shadow:var(--shadow); animation:pop .18s ease}
 .light-stage{position:relative; flex:1 1 auto; min-height:0; display:grid; place-items:center; padding:20px; background:
   radial-gradient(60% 60% at 50% 40%,rgba(255,93,82,.08),transparent), #0c0e14}
-.light-stage img{max-width:100%; max-height:64vh; border-radius:10px; box-shadow:var(--shadow)}
+.light-stage img,.light-stage video{max-width:100%; max-height:64vh; border-radius:10px; box-shadow:var(--shadow)}
 .light-foot{flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 18px; border-top:1px solid var(--line)}
 .light-meta{font-family:var(--mono); font-size:12px; color:var(--dim)}
 .light-meta b{color:var(--mint); font-weight:600}
