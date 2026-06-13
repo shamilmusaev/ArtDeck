@@ -4,7 +4,7 @@ import struct
 
 
 def parse_binary_vdf(data):
-    """Разбирает бинарный VDF в dict. Типы: 0x00 map, 0x01 str, 0x02 int32, 0x08 end."""
+    """Разбирает бинарный VDF в dict. Типы: 0x00 map, 0x01 str, 0x02 int32, 0x07 int64, 0x08 end."""
     pos = 0
 
     def read_cstring():
