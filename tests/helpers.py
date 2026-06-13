@@ -16,6 +16,8 @@ def build_shortcuts_vdf(games):
         entry = b""
         entry += b"\x01" + _cstr("AppName") + _cstr(g.get("AppName", ""))
         entry += b"\x01" + _cstr("Exe") + _cstr(g.get("Exe", ""))
+        if g.get("icon"):
+            entry += b"\x01" + _cstr("icon") + _cstr(g["icon"])
         if "appid" in g:
             entry += b"\x02" + _cstr("appid") + struct.pack("<I", g["appid"] & 0xffffffff)
         if "int64" in g:

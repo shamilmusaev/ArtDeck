@@ -108,12 +108,14 @@ def load_shortcuts(vdf_path):
             continue
         name = get_ci(entry, "AppName") or ""
         exe = get_ci(entry, "Exe") or ""
+        icon = get_ci(entry, "icon") or ""
         appid = get_ci(entry, "appid")
         if not appid:
             appid = compute_legacy_appid(exe, name)
         appid &= 0xffffffff
         if name:
-            games.append({"appid": appid, "name": name, "exe": exe})
+            games.append({"appid": appid, "name": name, "exe": exe,
+                          "icon": icon, "kind": "shortcut"})
     return games
 
 
@@ -123,6 +125,15 @@ def list_games(steam_path, uid):
     if not os.path.isfile(vdf):
         return []
     games = load_shortcuts(vdf)
+    for g in games:
+        g["status"] = art_status(grid_dir, g["appid"])
+    return games
+
+
+def installed_games(steam_path, uid):
+    """Установленные Steam-игры со статусом артов для grid указанного аккаунта."""
+    _, grid_dir = account_paths(steam_path, uid)
+    games = load_installed(steam_path)
     for g in games:
         g["status"] = art_status(grid_dir, g["appid"])
     return games

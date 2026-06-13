@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 from tests.helpers import build_shortcuts_vdf
-from steam.library import load_shortcuts, find_orphans, compute_legacy_appid, NONSTEAM_MIN
+from steam.library import load_shortcuts, find_orphans, compute_legacy_appid, NONSTEAM_MIN, installed_games
 
 
 class LibraryTest(unittest.TestCase):
@@ -52,6 +52,38 @@ class LibraryTest(unittest.TestCase):
             vdf = os.path.join(tmp, "shortcuts.vdf")  # intentionally NOT created
             grid_dir, orph = find_orphans(vdf)
             self.assertEqual(orph, [])  # no vdf -> nothing treated as orphan (safety)
+
+    def test_load_shortcuts_has_icon_and_kind(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            vdf = os.path.join(tmp, "shortcuts.vdf")
+            with open(vdf, "wb") as f:
+                f.write(build_shortcuts_vdf([
+                    {"appid": 2468090731, "AppName": "Alien", "Exe": "a.exe",
+                     "icon": "C:\\icons\\alien.ico"},
+                ]))
+            g = load_shortcuts(vdf)[0]
+            self.assertEqual(g["kind"], "shortcut")
+            self.assertEqual(g["icon"], "C:\\icons\\alien.ico")
+
+
+class InstalledGamesTest(unittest.TestCase):
+    def test_installed_games_attaches_status(self):
+        from tests.helpers import make_library, write_file
+        with tempfile.TemporaryDirectory() as tmp:
+            steam = os.path.join(tmp, "Steam")
+            make_library(steam, {"431960": "Wallpaper Engine"})
+            write_file(os.path.join(steam, "steamapps", "libraryfolders.vdf"),
+                       '"libraryfolders"\n{\n  "0"\n  {\n    "path" "%s"\n  }\n}\n'
+                       % steam.replace("\\", "\\\\"))
+            uid = "999"
+            grid = os.path.join(steam, "userdata", uid, "config", "grid")
+            os.makedirs(grid)
+            open(os.path.join(grid, "431960p.png"), "wb").close()
+            games = installed_games(steam, uid)
+            self.assertEqual(len(games), 1)
+            self.assertEqual(games[0]["appid"], 431960)
+            self.assertTrue(games[0]["status"]["cover"])   # 431960p.png present
+            self.assertFalse(games[0]["status"]["hero"])
 
 
 class FacadeTest(unittest.TestCase):
