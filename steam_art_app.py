@@ -26,9 +26,25 @@ sys.path.insert(0, SCRIPTDIR)
 
 import steam as engine
 
-# В собранном exe (PyInstaller --onefile) ресурсы web/ распакованы в sys._MEIPASS.
+# In a PyInstaller --onefile build, web/ is unpacked into sys._MEIPASS.
 WEBDIR = os.path.join(getattr(sys, "_MEIPASS", SCRIPTDIR), "web")
 STEAM = engine.find_steam_path(None)
+
+# Cache of parsed shortcuts.vdf as {appid: game}, keyed by path and invalidated
+# by mtime — the icon endpoint is hit once per game row on every list render.
+_SHORTCUTS_CACHE = {}
+
+
+def _shortcuts_index(vdf):
+    try:
+        mtime = os.path.getmtime(vdf)
+    except OSError:
+        return {}
+    cached = _SHORTCUTS_CACHE.get(vdf)
+    if not cached or cached[0] != mtime:
+        cached = (mtime, {g["appid"]: g for g in engine.load_shortcuts(vdf)})
+        _SHORTCUTS_CACHE[vdf] = cached
+    return cached[1]
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -123,15 +139,21 @@ class Handler(http.server.BaseHTTPRequestHandler):
             else:
                 games = []
             is_installed = source == "installed"
+            no_official = {t: False for t in engine.ART_TYPES}
+
+            def official(g):
+                # status[t] = our custom art; official[t] = Steam's own art (installed games)
+                if not is_installed:
+                    return no_official
+                arts = engine.official_arts(STEAM, g["appid"])
+                return {t: arts.get(t) is not None for t in engine.ART_TYPES}
+
             out = [{
                 "appid": g["appid"],
                 "name": engine.clean_name(g["name"]),
                 "kind": g.get("kind", "shortcut"),
-                # status[t] = НАШ кастомный арт; official[t] = официальный арт Steam (установленные)
                 "status": {t: bool(g["status"][t]) for t in engine.ART_TYPES},
-                "official": ({t: engine.official_art(STEAM, g["appid"], t) is not None
-                              for t in engine.ART_TYPES}
-                             if is_installed else {t: False for t in engine.ART_TYPES}),
+                "official": official(g),
             } for g in games]
             out.sort(key=lambda g: g["name"].lower())
             return self._json({"games": out, "source": source})
@@ -222,12 +244,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self._send_file(p, cache=False)
 
     def _game_icon_file(self, uid, appid):
-        """Путь к иконке игры: сперва ищем среди non-Steam ярлыков аккаунта,
-        иначе считаем Steam-игрой и берём из librarycache."""
+        """Icon path for a game: a non-Steam shortcut's own icon, else the Steam
+        librarycache image. A list render fires one request per row, so the parsed
+        shortcuts.vdf is cached (by path+mtime) to avoid re-parsing it N times."""
         vdf, _ = engine.account_paths(STEAM, uid)
-        for g in engine.load_shortcuts(vdf):
-            if g["appid"] == appid:
-                return engine.game_icon_path(STEAM, g)
+        g = _shortcuts_index(vdf).get(appid)
+        if g is not None:
+            return engine.game_icon_path(STEAM, g)
         return engine.steam_game_image(STEAM, appid)
 
     def _serve_gameicon(self, q):

@@ -17,17 +17,28 @@ ART_TYPES = {
 ART_EXTS = (".png", ".jpg", ".jpeg", ".webp")
 
 
-def existing_art(grid_dir, appid, suffix):
+def grid_index(grid_dir):
+    """Set of filenames present in grid_dir (a single listdir). Lets art_status
+    test presence by membership instead of ~20 isfile syscalls per game."""
+    try:
+        return set(os.listdir(grid_dir))
+    except OSError:
+        return set()
+
+
+def existing_art(grid_dir, appid, suffix, names=None):
+    names = grid_index(grid_dir) if names is None else names
     for ext in ART_EXTS:
-        p = os.path.join(grid_dir, "%d%s%s" % (appid, suffix, ext))
-        if os.path.isfile(p):
-            return p
+        fn = "%d%s%s" % (appid, suffix, ext)
+        if fn in names:
+            return os.path.join(grid_dir, fn)
     return None
 
 
-def art_status(grid_dir, appid):
-    """{art_type: путь|None} по всем типам артов для игры."""
-    return {t: existing_art(grid_dir, appid, cfg["suffix"]) for t, cfg in ART_TYPES.items()}
+def art_status(grid_dir, appid, names=None):
+    """{art_type: path|None} for every art type of one game."""
+    names = grid_index(grid_dir) if names is None else names
+    return {t: existing_art(grid_dir, appid, cfg["suffix"], names) for t, cfg in ART_TYPES.items()}
 
 
 def fetch_art_url(game_id, art_cfg, api_key):

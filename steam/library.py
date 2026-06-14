@@ -6,7 +6,7 @@ import re
 import zlib
 
 from steam.vdf import parse_binary_vdf, get_ci, parse_text_vdf
-from steam.arts import art_status
+from steam.arts import art_status, grid_index
 from steam.paths import account_paths
 
 NONSTEAM_MIN = 0x80000000  # appid non-Steam игр всегда >= этого
@@ -127,8 +127,9 @@ def list_games(steam_path, uid):
     if not os.path.isfile(vdf):
         return []
     games = load_shortcuts(vdf)
+    names = grid_index(grid_dir)
     for g in games:
-        g["status"] = art_status(grid_dir, g["appid"])
+        g["status"] = art_status(grid_dir, g["appid"], names)
     return games
 
 
@@ -136,8 +137,9 @@ def installed_games(steam_path, uid):
     """Установленные Steam-игры со статусом артов для grid указанного аккаунта."""
     _, grid_dir = account_paths(steam_path, uid)
     games = load_installed(steam_path)
+    names = grid_index(grid_dir)
     for g in games:
-        g["status"] = art_status(grid_dir, g["appid"])
+        g["status"] = art_status(grid_dir, g["appid"], names)
     return games
 
 

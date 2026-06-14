@@ -11,7 +11,7 @@ from steam.sgdb import (
     search_game_id, search_games, list_arts_raw, download,
 )
 from steam.arts import (
-    ART_TYPES, ART_EXTS, existing_art, art_status, apply_art,
+    ART_TYPES, ART_EXTS, existing_art, art_status, grid_index, apply_art,
     list_arts, fetch_art_url, revert_art,
 )
 from steam.library import (
@@ -26,7 +26,7 @@ from steam.icons import STEAM_IMAGE_PRIORITY, steam_game_image, game_icon_path
 from steam.vdf import parse_text_vdf
 from steam.customimage import register_custom_image, librarycache_json
 from steam.verify import verify_applied, valid_image
-from steam.official import official_art
+from steam.official import official_art, official_arts
 
 __all__ = [
     "APP_DIR", "DEFAULT_STEAM_PATHS", "find_steam_path", "load_api_key", "save_api_key",
@@ -40,5 +40,6 @@ __all__ = [
     "account_steamid64", "load_users", "account_name", "account_avatar_path",
     "account_infos", "STEAM_IMAGE_PRIORITY", "steam_game_image", "game_icon_path",
     "parse_text_vdf", "register_custom_image", "librarycache_json",
-    "verify_applied", "valid_image", "official_art",
+    "verify_applied", "valid_image", "official_art", "official_arts",
+    "grid_index",
 ]

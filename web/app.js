@@ -54,7 +54,7 @@ window.addEventListener("DOMContentLoaded", init);
 async function init(){
   applyStatic();
   buildTabs();
-  $("#filter").addEventListener("input", renderGames);
+  $("#filter").addEventListener("input", filterGames);
   $("#search").addEventListener("keydown", e=>{ if(e.key==="Enter") doSearch(); });
   document.addEventListener("click", e=>{ const b=$("#candidates"); if(b && !b.contains(e.target)) candOpen(false); });
   document.addEventListener("keydown", e=>{ if(e.key==="Escape") candOpen(false); });
@@ -201,11 +201,30 @@ async function loadGames(minMs=0){
   }catch(e){ if(skelTimer) clearTimeout(skelTimer); $("#games").innerHTML=""; toast(t("games_err")+e.message,"bad"); }
 }
 
+// Render the coverage meter for one game (reused for in-place row updates).
+function renderCov(cov, g){
+  cov.innerHTML=""; let have=0;
+  const has=tp=>!!((g.status && g.status[tp]) || (g.official && g.official[tp]));
+  STATUS_ORDER.forEach(tp=>{
+    const custom=!!(g.status && g.status[tp]);
+    const present=has(tp); if(present) have++;
+    // on = our custom art (mint); off = Steam's own art (dim)
+    const seg=el("span","seg"+(tp==="cover"?" cover":"")+(custom?" on":present?" off":""));
+    seg.title=t("t_"+tp)+(present?" ✓":" ✗");
+    cov.appendChild(seg);
+  });
+  const missing=STATUS_ORDER.filter(tp=>!has(tp)).map(tp=>t("t_"+tp));
+  cov.classList.toggle("need", !has("cover"));
+  cov.title = have===5 ? t("cov_full")
+    : t("cov_count",have)+" · "+t("cov_missing")+": "+missing.join(", ");
+}
+
+// Build every row once; filtering and per-row updates reuse these nodes so a
+// keystroke or a single apply doesn't rebuild the list and re-fetch all icons.
 function renderGames(){
-  const flt=$("#filter").value.trim().toLowerCase();
   const box=$("#games"); box.innerHTML="";
-  state.games.filter(g=>!flt||g.name.toLowerCase().includes(flt)).forEach(g=>{
-    const row=el("div","game");
+  state.games.forEach(g=>{
+    const row=el("div","game"); g._row=row;
     if(state.selected && state.selected.appid===g.appid) row.classList.add("active");
     const ic=el("span","g-ic",GAME_PH);
     const img=el("img"); img.alt="";
@@ -213,24 +232,25 @@ function renderGames(){
     img.src=`/api/gameicon?account=${enc(state.account)}&appid=${g.appid}`;
     row.appendChild(ic);
     row.appendChild(el("span","g-nm",escapeHtml(g.name)));
-    const cov=el("div","cov"); let have=0;
-    const has=tp=>!!((g.status && g.status[tp]) || (g.official && g.official[tp]));
-    STATUS_ORDER.forEach(tp=>{
-      const custom=!!(g.status && g.status[tp]);
-      const present=has(tp); if(present) have++;
-      // on = наш кастомный арт (mint); off = официальный арт Steam (приглушённый)
-      const seg=el("span","seg"+(tp==="cover"?" cover":"")+(custom?" on":present?" off":""));
-      seg.title=t("t_"+tp)+(present?" ✓":" ✗");
-      cov.appendChild(seg);
-    });
-    const missing=STATUS_ORDER.filter(tp=>!has(tp)).map(tp=>t("t_"+tp));
-    cov.classList.toggle("need", !has("cover"));
-    cov.title = have===5 ? t("cov_full")
-      : t("cov_count",have)+" · "+t("cov_missing")+": "+missing.join(", ");
+    const cov=el("div","cov"); g._cov=cov; renderCov(cov,g);
     row.appendChild(cov);
     row.addEventListener("click", ()=>selectGame(g,row));
     box.appendChild(row);
   });
+  filterGames();
+}
+
+// Show/hide existing rows by the filter text — no rebuild, no icon re-fetch.
+function filterGames(){
+  const flt=$("#filter").value.trim().toLowerCase();
+  state.games.forEach(g=>{
+    if(g._row) g._row.classList.toggle("hidden", !!flt && !g.name.toLowerCase().includes(flt));
+  });
+}
+
+// Refresh just one game's coverage meter after apply/revert.
+function updateGameRow(g){
+  if(g && g._cov) renderCov(g._cov, g);
 }
 
 async function selectGame(g,row){
@@ -414,8 +434,8 @@ async function revertArt(){
     const r=await jpost("/api/revert",{account:state.account,appid:g.appid,type:state.type});
     if(r.ok){
       toast((r.removed&&r.removed.length)?t("reverted"):t("nothing_to_revert"),"ok");
-      g.status[state.type]=false; renderGames();
-      loadArts();   // перерисует «Текущую»: теперь оригинал Steam или «нет»
+      g.status[state.type]=false; updateGameRow(g);
+      loadArts();   // re-renders the "Current" card: Steam's original or "none"
     }else toast(t("error")+(r.error||"?"),"bad");
   }catch(e){ toast(t("error")+e.message,"bad"); }
 }
@@ -507,7 +527,7 @@ async function applyArt(a,card){
         img.src=`/img?account=${enc(state.account)}&appid=${state.selected.appid}&type=${state.type}&t=${Date.now()}`;
       });
       const g=state.games.find(x=>x.appid===state.selected.appid);
-      if(g){ g.status[state.type]=true; renderGames(); }
+      if(g){ g.status[state.type]=true; updateGameRow(g); }
     }else{ if(card) card.classList.remove("sel"); toast(t("error")+(r.error||"?"),"bad"); }
   }catch(e){ if(card) card.classList.remove("sel"); toast(t("apply_err")+e.message,"bad"); }
 }
