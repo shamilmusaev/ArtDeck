@@ -39,7 +39,7 @@ class ArtsTest(unittest.TestCase):
                     pass
             with patch("steam.arts.download", fake_download):
                 dest = apply_art(grid, 200, "cover", "http://x/anim.webp")
-            self.assertTrue(dest.endswith("200p.png"))   # webp сохраняем как .png (иначе Steam игнорит)
+            self.assertTrue(dest.endswith("200p.png"))   # we save webp as .png (otherwise Steam ignores it)
             self.assertFalse(os.path.isfile(os.path.join(grid, "200p.webp")))
 
     def test_revert_art_removes_slot(self):
@@ -47,7 +47,7 @@ class ArtsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as grid:
             open(os.path.join(grid, "100p.png"), "wb").close()
             open(os.path.join(grid, "100p.webp"), "wb").close()
-            open(os.path.join(grid, "100_hero.png"), "wb").close()   # другой слот — не трогаем
+            open(os.path.join(grid, "100_hero.png"), "wb").close()   # different slot — leave it alone
             removed = revert_art(grid, 100, "cover")
             self.assertEqual(sorted(removed), ["100p.png", "100p.webp"])
             self.assertFalse(os.path.isfile(os.path.join(grid, "100p.png")))
@@ -69,14 +69,14 @@ class ArtsTest(unittest.TestCase):
 
     def test_orientation_filter_cover_vs_banner(self):
         raw = [
-            {"url": "p", "thumb": "p", "width": 600, "height": 900, "style": "s"},   # вертикальная
-            {"url": "l", "thumb": "l", "width": 920, "height": 430, "style": "s"},   # горизонтальная
+            {"url": "p", "thumb": "p", "width": 600, "height": 900, "style": "s"},   # portrait
+            {"url": "l", "thumb": "l", "width": 920, "height": 430, "style": "s"},   # landscape
         ]
         with patch("steam.arts.list_arts_raw", lambda *a, **k: raw):
             cov = list_arts(1, "cover", "key")
             ban = list_arts(1, "banner", "key")
-        self.assertEqual([a["url"] for a in cov], ["p"])   # обложка — только вертикальная
-        self.assertEqual([a["url"] for a in ban], ["l"])   # баннер — только горизонтальная
+        self.assertEqual([a["url"] for a in cov], ["p"])   # cover — portrait only
+        self.assertEqual([a["url"] for a in ban], ["l"])   # banner — landscape only
 
     def test_list_arts_animated_requests_animated_type(self):
         captured = {}

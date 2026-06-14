@@ -1,27 +1,29 @@
 # -*- coding: utf-8 -*-
-"""Сборка ArtDeck в один .exe через PyInstaller.
+"""Build ArtDeck into a single .exe with PyInstaller.
 
-Запуск:  python build.py   (или run_build.bat)
+Run:  python build.py   (or run_build.bat)
 
-PyInstaller — dev-зависимость, в движок/приложение не входит. На целевой машине
-нужен рантайм Edge WebView2 (на Windows 11 есть из коробки). web/ кладётся в бандл;
-steam_art.key создаётся рядом с .exe при первом вводе ключа (в бандл не входит).
+PyInstaller is a dev dependency; it isn't part of the engine/app. The target
+machine needs the Edge WebView2 runtime (built into Windows 11). web/ goes into
+the bundle; steam_art.key is created next to the .exe on first key entry (not
+bundled).
 
-Если --onefile проблемный (pywebview/pythonnet) — раскомментируй ONEDIR=True ниже:
-тогда соберётся папка dist/ArtDeck/ с .exe внутри (надёжнее, но не один файл)."""
+If --onefile is problematic (pywebview/pythonnet), set ONEDIR=True below: it
+builds a dist/ArtDeck/ folder with the .exe inside (more reliable, but not a
+single file)."""
 import os
 import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ONEDIR = False  # True -> сборка в папку (фолбэк, если --onefile капризничает)
+ONEDIR = False  # True -> build into a folder (fallback if --onefile misbehaves)
 
 
 def main():
     try:
         import PyInstaller  # noqa: F401
     except ImportError:
-        print("PyInstaller не найден — ставлю…")
+        print("PyInstaller not found — installing...")
         subprocess.check_call([sys.executable, "-m", "pip", "install", "pyinstaller"])
 
     sep = ";" if os.name == "nt" else ":"
@@ -32,7 +34,7 @@ def main():
         "--windowed",
         "--icon", os.path.join("assets", "artdeck.ico"),
         "--add-data", "web%sweb" % sep,
-        "--collect-submodules", "webview",   # платформенные бэкенды pywebview
+        "--collect-submodules", "webview",   # pywebview platform backends
         "--noconfirm", "--clean",
     ]
     args.append("--onedir" if ONEDIR else "--onefile")
@@ -42,9 +44,9 @@ def main():
 
     exe = os.path.join(HERE, "dist", "ArtDeck.exe") if not ONEDIR \
         else os.path.join(HERE, "dist", "ArtDeck", "ArtDeck.exe")
-    print("\n=== Готово ===")
-    print("exe:", exe if os.path.isfile(exe) else "(не найден — смотри лог PyInstaller выше)")
-    print("Запусти его — окно ArtDeck откроется. steam_art.key появится рядом при вводе ключа.")
+    print("\n=== Done ===")
+    print("exe:", exe if os.path.isfile(exe) else "(not found — see the PyInstaller log above)")
+    print("Run it — the ArtDeck window opens. steam_art.key appears next to it on key entry.")
 
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ class CustomImageTest(unittest.TestCase):
             register_custom_image(steam, "999", 2468090731)
             arr = self._read(steam, "999", 2468090731)
             ci = dict((k, v) for k, v in arr)["customimage"]
-            self.assertTrue(ci["data"])              # непустой data — это и включает арт
+            self.assertTrue(ci["data"])              # non-empty data — that's what enables the art
             self.assertEqual(ci["data"]["nVersion"], 1)
 
     def test_preserves_other_entries_and_existing_logo(self):
@@ -34,9 +34,9 @@ class CustomImageTest(unittest.TestCase):
             register_custom_image(steam, "999", 55)
             arr = self._read(steam, "999", 55)
             d = dict((k, v) for k, v in arr)
-            self.assertIn("achievements", d)                      # чужая запись сохранена
+            self.assertIn("achievements", d)                      # the other entry is preserved
             self.assertEqual(d["achievements"]["data"]["nTotal"], 5)
-            self.assertEqual(d["customimage"]["data"]["logoPosition"]["pinnedPosition"], "TopRight")  # позиция лого сохранена
+            self.assertEqual(d["customimage"]["data"]["logoPosition"]["pinnedPosition"], "TopRight")  # logo position preserved
 
 
 if __name__ == "__main__":

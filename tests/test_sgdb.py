@@ -56,7 +56,7 @@ class ApiGetTest(unittest.TestCase):
         try:
             with self.assertRaises(SGDBError):
                 api_get("/x", "key", retries=3)
-            self.assertEqual(calls["n"], 3)  # все 3 попытки исчерпаны
+            self.assertEqual(calls["n"], 3)  # all 3 attempts exhausted
         finally:
             sgdb.request.urlopen = old_open
             sgdb.time.sleep = old_sleep

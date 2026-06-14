@@ -17,10 +17,10 @@ class VerifyTest(unittest.TestCase):
             p = os.path.join(tmp, "a.png"); _png(p)
             self.assertTrue(valid_image(p))
             empty = os.path.join(tmp, "e.png"); open(empty, "wb").close()
-            self.assertFalse(valid_image(empty))          # пустой
+            self.assertFalse(valid_image(empty))          # empty
             txt = os.path.join(tmp, "t.png")
             with open(txt, "wb") as f: f.write(b"<html>nope")
-            self.assertFalse(valid_image(txt))            # не картинка
+            self.assertFalse(valid_image(txt))            # not an image
 
     def test_ok_when_single_valid_file(self):
         with tempfile.TemporaryDirectory() as grid:
@@ -31,7 +31,7 @@ class VerifyTest(unittest.TestCase):
     def test_competing_file_detected(self):
         with tempfile.TemporaryDirectory() as grid:
             dest = os.path.join(grid, "100p.png"); _png(dest)
-            _png(os.path.join(grid, "100p.jpg"))         # старый дубль в слоте
+            _png(os.path.join(grid, "100p.jpg"))         # an old dupe in the slot
             v = verify_applied(grid, 100, "cover", dest)
             self.assertFalse(v["ok"]); self.assertEqual(v["code"], "competing")
             self.assertIn("100p.jpg", v["files"])

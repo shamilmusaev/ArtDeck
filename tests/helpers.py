@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Хелперы для тестов: сборка бинарного shortcuts.vdf в памяти."""
+"""Test helpers: build a binary shortcuts.vdf in memory."""
 import os
 import struct
 
@@ -9,8 +9,8 @@ def _cstr(s):
 
 
 def build_shortcuts_vdf(games):
-    """games: список dict {appid:int, AppName:str, Exe:str}.
-    Возвращает bytes в формате, который понимает parse_binary_vdf."""
+    """games: list of dicts {appid:int, AppName:str, Exe:str}.
+    Returns bytes in the format parse_binary_vdf understands."""
     body = b""
     for i, g in enumerate(games):
         entry = b""
@@ -23,9 +23,9 @@ def build_shortcuts_vdf(games):
         if "int64" in g:
             fname, fval = g["int64"]
             entry += b"\x07" + _cstr(fname) + struct.pack("<q", fval)
-        entry += b"\x08"  # конец вложенного map
+        entry += b"\x08"  # end of nested map
         body += b"\x00" + _cstr(str(i)) + entry
-    body += b"\x08"  # конец map shortcuts
+    body += b"\x08"  # end of the shortcuts map
     return b"\x00" + _cstr("shortcuts") + body
 
 
@@ -36,7 +36,7 @@ def write_file(path, text):
 
 
 def make_library(root, apps):
-    """Создаёт steamapps/appmanifest_*.acf для набора apps={appid: name}."""
+    """Create steamapps/appmanifest_*.acf for apps={appid: name}."""
     sa = os.path.join(root, "steamapps")
     for appid, name in apps.items():
         write_file(os.path.join(sa, "appmanifest_%s.acf" % appid),
@@ -46,8 +46,8 @@ def make_library(root, apps):
 
 
 def make_account(steam_root, uid, games, persona=None):
-    """Создаёт userdata/<uid>/config/shortcuts.vdf для games (list для build_shortcuts_vdf).
-    Если persona задан — пишет config/loginusers.vdf с этим именем для uid."""
+    """Create userdata/<uid>/config/shortcuts.vdf for games (a list for build_shortcuts_vdf).
+    If persona is given, write config/loginusers.vdf with that name for the uid."""
     cfg = os.path.join(steam_root, "userdata", uid, "config")
     os.makedirs(cfg, exist_ok=True)
     with open(os.path.join(cfg, "shortcuts.vdf"), "wb") as f:

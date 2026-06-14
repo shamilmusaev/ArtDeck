@@ -50,14 +50,14 @@ class InstalledTest(unittest.TestCase):
         import os as _os
         with tempfile.TemporaryDirectory() as tmp:
             self._steam(tmp, [("", {"431960": "Wallpaper Engine"})])
-            # вызов с путём в другом регистре/сепараторах не должен задвоить библиотеку
+            # a call with a differently-cased/separated path must not duplicate the library
             alt = tmp.replace(_os.sep, "/")
             libs = load_installed(alt) if False else None  # noqa
-            # достаточно проверить сам list_libraries на устойчивость к форме пути
+            # checking list_libraries itself is robust to path form is enough
             from steam.library import list_libraries
             got = list_libraries(tmp)
             norm = [_os.path.normcase(_os.path.normpath(p)) for p in got]
-            self.assertEqual(len(norm), len(set(norm)))  # без дубликатов
+            self.assertEqual(len(norm), len(set(norm)))  # no duplicates
 
 
 if __name__ == "__main__":

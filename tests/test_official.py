@@ -23,7 +23,7 @@ class OfficialTest(unittest.TestCase):
     def test_none_when_absent(self):
         with tempfile.TemporaryDirectory() as steam:
             self.assertIsNone(official_art(steam, 999, "cover"))
-            self.assertIsNone(official_art(steam, 999, "icon"))  # icon без надёжного файла
+            self.assertIsNone(official_art(steam, 999, "icon"))  # icon has no reliable file
 
 
 if __name__ == "__main__":

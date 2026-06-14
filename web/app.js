@@ -1,5 +1,5 @@
 "use strict";
-/* ArtDeck — фронтенд. Чистый vanilla, без сборки. Зовёт локальный JSON-API. */
+/* ArtDeck frontend. Plain vanilla, no build step. Calls the local JSON API. */
 
 const SVG = (b)=>`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${b}</svg>`;
 const ICONS = {
@@ -37,7 +37,7 @@ async function jpost(u,b){const r=await fetch(u,{method:"POST",headers:{"Content
 const enc = encodeURIComponent;
 const IS_VIDEO = u => /\.(webm|mp4)(\?|$)/i.test(u || "");
 
-/* ---------------- i18n статика ---------------- */
+/* ---------------- i18n static ---------------- */
 function applyStatic(){
   document.querySelectorAll("[data-i18n]").forEach(e=>{ e.textContent = t(e.dataset.i18n); });
   $("#filter").placeholder = t("filter_games");
@@ -69,7 +69,7 @@ async function init(){
   document.addEventListener("click", e=>{ if(!$("#settings").contains(e.target)) closeSettings(); });
   $("#anim").addEventListener("change", e=>{ state.animated=e.target.checked; if(state.gameId) loadArts(); });
 
-  // вкладки источника (Non-Steam / Установленные)
+  // source tabs (Non-Steam / Installed)
   document.querySelectorAll(".src-tab").forEach(tab=>{
     tab.addEventListener("click", ()=>{
       if(tab.classList.contains("active")) return;
@@ -77,16 +77,16 @@ async function init(){
       tab.classList.add("active");
       state.source = tab.dataset.src;
       $("#src-tabs").dataset.src = state.source;
-      $("#filter").value="";   // одинаковый старт вкладок: сбрасываем фильтр
-      // даём слайдеру вкладки отрисовать переход до тяжёлой перерисовки списка
+      $("#filter").value="";   // same start for both tabs: reset the filter
+      // let the tab slider paint its transition before the heavy list re-render
       requestAnimationFrame(()=>requestAnimationFrame(()=>loadGames()));
     });
   });
 
-  // дропдаун аккаунта
+  // account dropdown
   $("#acct-btn").addEventListener("click", toggleAcctMenu);
   document.addEventListener("click", e=>{ if(!$("#acct").contains(e.target)) closeAcctMenu(); });
-  // лайтбокс
+  // lightbox
   $("#light-x").addEventListener("click", closeLight);
   $("#light").addEventListener("click", e=>{ if(e.target.id==="light") closeLight(); });
   document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ closeLight(); closeModal(); } });
@@ -97,7 +97,7 @@ async function init(){
     setKey(st.key_ok);
     if(!st.steam_path){ toast(t("steam_not_found"),"bad"); return; }
     state.accounts = st.accounts || [];
-    $("#acct").classList.toggle("solo", state.accounts.length<=1);  // один аккаунт → без дропдауна
+    $("#acct").classList.toggle("solo", state.accounts.length<=1);  // single account -> no dropdown
     renderAcctMenu();
     if(state.accounts.length){ selectAccount(state.accounts[0].uid); }
     if(!st.key_ok) toast(t("no_key_hint"),"bad");
@@ -132,7 +132,7 @@ function openLangPicker(){
   });
 }
 
-/* ---------------- аккаунты ---------------- */
+/* ---------------- accounts ---------------- */
 function acctInitial(a){ return (a.name||a.uid||"?").trim().charAt(0).toUpperCase(); }
 function avatarStyle(a){ return a.has_avatar ? `background-image:url(/api/avatar?account=${enc(a.uid)})` : ""; }
 
@@ -158,10 +158,10 @@ function selectAccount(uid){
 function toggleAcctMenu(){ if($("#acct").classList.contains("solo")) return; const m=$("#acct-menu"); const open=m.classList.toggle("hidden"); $("#acct-btn").setAttribute("aria-expanded", String(!open)); }
 function closeAcctMenu(){ $("#acct-menu").classList.add("hidden"); $("#acct-btn").setAttribute("aria-expanded","false"); }
 
-/* ---------------- список игр ---------------- */
+/* ---------------- game list ---------------- */
 async function refreshGames(){
   const b=$("#btn-refresh"); if(b) b.classList.add("spin");
-  await loadGames(2000);                    // держим скелет минимум 2с — иначе скан мелькает
+  await loadGames(2000);                    // hold the skeleton at least 2s — otherwise the scan flickers
   if(b) b.classList.remove("spin");
   toast(t("refreshed"),"ok");
 }
@@ -183,8 +183,8 @@ async function loadGames(minMs=0){
   state.selected=null; state.gameId=null; state.matchName=null;
   $("#match-name").textContent=t("pick_game"); $("#match-sub").textContent="";
   $("#grid").innerHTML=""; $("#candidates").classList.add("hidden");
-  // refresh — показываем скелет сразу; быстрый свитч — только если загрузка дольше 160мс
-  // (иначе скелет мелькает на миг при мгновенном чтении локальных файлов).
+  // refresh — show the skeleton immediately; a quick switch only if loading takes >160ms
+  // (otherwise the skeleton flashes for an instant when local files read instantly).
   let shown=false;
   const showSkel=()=>{ shown=true; renderGameSkeletons(); };
   const skelTimer = minMs>0 ? (showSkel(),null) : setTimeout(showSkel,160);
@@ -193,7 +193,7 @@ async function loadGames(minMs=0){
     const d = await jget(`/api/games?account=${enc(state.account)}&source=${state.source}`);
     state.games = d.games||[];
     if(skelTimer) clearTimeout(skelTimer);
-    const wait=minMs-(Date.now()-t0);         // у refresh скелет держим не короче minMs (2с)
+    const wait=minMs-(Date.now()-t0);         // for refresh, hold the skeleton no shorter than minMs (2s)
     if(wait>0){ if(!shown) showSkel(); await new Promise(r=>setTimeout(r,wait)); }
     renderGames();
     const first=document.querySelector("#games .game");
@@ -273,9 +273,9 @@ async function selectGame(g,row){
   }catch(e){ state.matchState="error"; state.matchError=e.message; renderMatchSub(); }
 }
 
-/* Под-строка match-бара: полезные статус-чипы из данных самой игры (статус
-   обложки + покрытие) — заполняются сразу, не дожидаясь SteamGridDB; плюс
-   состояние поиска/числа вариантов и компактное совпадение GridDB. */
+/* match-bar subline: useful status chips from the game's own data (cover status
+   + coverage) — filled instantly, without waiting on SteamGridDB; plus the
+   search state / variant count and a compact GridDB match. */
 function mchip(cls, text, title){
   return `<span class="mbadge${cls?" "+cls:""}"${title?` title="${escapeHtml(title)}"`:""}>${escapeHtml(text)}</span>`;
 }
@@ -283,15 +283,15 @@ function renderMatchSub(){
   const g=state.selected, sub=$("#match-sub");
   if(!g){ sub.textContent=""; return; }
   const has=ty=>!!((g.status&&g.status[ty])||(g.official&&g.official[ty]));
-  // 1) статус обложки — главный факт (своя / Steam / нет)
+  // 1) cover status — the headline fact (custom / Steam / none)
   let html;
   if(g.status&&g.status.cover) html=mchip("ms ok", t("ms_cover_custom"));
   else if(has("cover")) html=mchip("ms", t("ms_cover_steam"));
   else html=mchip("ms warn", t("ms_cover_none"));
-  // 2) покрытие N/5
+  // 2) coverage N/5
   const have=STATUS_ORDER.filter(has).length;
   html+=mchip(have===5?"ok":"", t("cov_count", have));
-  // 3) состояние SteamGridDB / число вариантов активного типа
+  // 3) SteamGridDB state / variant count for the active type
   if(state.matchState==="nokey")        html+=mchip("warn", t("need_key_sub"));
   else if(state.matchState==="searching") html+=mchip("", "SteamGridDB · "+t("ms_searching"));
   else if(state.matchState==="notfound")  html+=mchip("warn", t("not_found_manual"));
@@ -307,7 +307,7 @@ function setGame(id,name){
   renderMatchSub(); updateCandLabel(); loadArts();
 }
 
-/* ---------------- ручной поиск ---------------- */
+/* ---------------- manual search ---------------- */
 async function doSearch(){
   const q=$("#search").value.trim() || (state.selected?state.selected.name:"");
   if(!q) return;
@@ -350,7 +350,7 @@ function candOpen(open){
   if(open){ const s=box.querySelector(".cand-opt.sel"); if(s) s.scrollIntoView({block:"nearest"}); }
 }
 
-/* ---------------- вкладки типов ---------------- */
+/* ---------------- type tabs ---------------- */
 function buildTabs(){
   const box=$("#tabs"); box.innerHTML="";
   TYPES.forEach(tp=>{
@@ -366,7 +366,7 @@ function buildTabs(){
   $("#anim-wrap").style.display = state.type==="icon" ? "none" : "";
 }
 
-/* ---------------- арты ---------------- */
+/* ---------------- art ---------------- */
 function cardShell(cfg,i){
   const c=el("div","card"); c.style.animationDelay=(i*22)+"ms";
   const w=el("div","imgwrap"); w.style.setProperty("--ar",cfg.ar);
@@ -389,7 +389,7 @@ async function loadArts(){
   const sig=tp+"|"+state.animated;
   if(grid.dataset.skel!==sig || !grid.querySelector(".skeleton")) renderSkeletons();
   $("#anim-wrap").style.display = tp==="icon" ? "none" : "";
-  state.variants=null; renderMatchSub();   // «…» в чипе вариантов на время загрузки
+  state.variants=null; renderMatchSub();   // "..." in the variants chip while loading
   try{
     const d=await jget(`/api/arts?game_id=${state.gameId}&type=${tp}&animated=${state.animated?1:0}`);
     if(token!==state.reqToken) return;
@@ -414,7 +414,7 @@ function currentCard(cfg){
   img.onerror=()=>{ hasArt=false; w.innerHTML=""; w.appendChild(el("div","none",t("none_short"))); c.classList.add("nopic"); };
   img.src=src; w.appendChild(img);
   c.appendChild(el("div","cur-cap",t("current_cap")));
-  // кнопка возврата к оригиналу Steam — только если у нас есть свой кастомный арт этого типа
+  // revert-to-Steam-original button — only if we have our own custom art for this type
   const hasCustom = !!(state.selected && state.selected.status && state.selected.status[state.type]);
   if(hasCustom){
     const rv=el("button","revert",
@@ -446,7 +446,7 @@ function artCard(a,cfg,i){
   const done=()=>c.classList.remove("loading");
   const fail=()=>{ c.classList.remove("loading"); w.innerHTML=""; w.appendChild(el("div","none","⚠")); };
   if(IS_VIDEO(a.thumb)){
-    // лёгкое .webm-превью анимации (десятки КБ), полный url не грузим в сетке
+    // light .webm animation preview (tens of KB); we don't load the full url in the grid
     const v=el("video"); v.muted=true; v.loop=true; v.autoplay=true;
     v.setAttribute("playsinline",""); v.style.objectFit=cfg.fit;
     v.addEventListener("loadeddata",done); v.addEventListener("error",fail);
@@ -480,12 +480,12 @@ function meta(a){
   return m;
 }
 
-/* ---------------- лайтбокс предпросмотра ---------------- */
+/* ---------------- preview lightbox ---------------- */
 function openLight(a){
   state.selectedArt=a;
   const stage=$("#light-stage"); stage.innerHTML="";
-  // рамку под медиа резервируем сразу в финальной пропорции арта — скелет (shimmer)
-  // занимает тот же размер, что и будущая обложка, без «прыжка» при дозагрузке.
+  // reserve the media frame at the art's final aspect ratio up front — the skeleton (shimmer)
+  // takes the same size as the future cover, with no jump when it loads.
   let w=a.width, h=a.height;
   if(!(w&&h)){ const p=((TYPE[state.type]&&TYPE[state.type].ar)||"2/3").split("/").map(Number); w=p[0]; h=p[1]; }
   const frame=el("div","light-frame loading");
@@ -493,7 +493,7 @@ function openLight(a){
   frame.style.setProperty("--arn", String(w/h));
   const ready=()=>frame.classList.remove("loading");
   if(IS_VIDEO(a.thumb)){
-    // анимацию показываем лёгким .webm-превью, тяжёлый url качаем только при установке
+    // show animation via the light .webm preview; the heavy url is fetched only on apply
     const v=el("video"); v.muted=true; v.loop=true; v.autoplay=true; v.controls=false;
     v.setAttribute("playsinline","");
     v.addEventListener("loadeddata",ready); v.addEventListener("error",ready);
@@ -513,9 +513,9 @@ function openLight(a){
 }
 function closeLight(){ $("#light").classList.add("hidden"); $("#light-stage").innerHTML=""; }
 
-/* ---------------- применение ---------------- */
+/* ---------------- applying ---------------- */
 async function applyArt(a,card){
-  // только один вариант помечен как применённый: снимаем подсветку с остальных
+  // only one variant is marked applied: clear the highlight from the rest
   document.querySelectorAll("#grid .card.sel").forEach(c=>c.classList.remove("sel"));
   if(card) card.classList.add("sel");
   try{
@@ -532,7 +532,7 @@ async function applyArt(a,card){
   }catch(e){ if(card) card.classList.remove("sel"); toast(t("apply_err")+e.message,"bad"); }
 }
 
-/* ---------------- авто-дозаливка ---------------- */
+/* ---------------- auto-fill ---------------- */
 function autofill(){
   modal(t("autofill_title"),
     `<p>${t("autofill_body")}</p>
@@ -562,7 +562,7 @@ function runAutofill(scope){
   es.onerror=()=>{ es.close(); $("#overlay").classList.add("hidden"); toast(t("conn_lost"),"bad"); };
 }
 
-/* ---------------- очистка ---------------- */
+/* ---------------- cleanup ---------------- */
 async function openClean(){
   let d;
   try{ d=await jget("/api/orphans"); }catch(e){ toast(t("error")+e.message,"bad"); return; }
@@ -588,17 +588,17 @@ async function openClean(){
      }}]);
 }
 
-/* ---------------- ключ ---------------- */
+/* ---------------- key ---------------- */
 function setKey(ok){
   state.keyOk=ok;
-  // меню настроек (статус ключа есть всегда)
+  // settings menu (the key status is always present)
   const st=$("#set-key-status"); if(st) st.textContent = ok ? "OK" : t("key_need");
   const sk=$("#set-key"); if(sk) sk.classList.toggle("bad", !ok);
   const dot=$("#set-key-dot"); if(dot){ dot.classList.toggle("ok",ok); dot.classList.toggle("bad",!ok); }
-  // явная кнопка-CTA в баре (старое место) — только когда ключа нет; иначе ключ живёт в ⚙
+  // explicit CTA button in the bar (old spot) — only when there's no key; otherwise the key lives in the gear menu
   const b=$("#btn-key");
   if(b){ b.classList.toggle("hidden", ok); const lbl=$("#key-label"); if(lbl) lbl.textContent = t("key_need"); }
-  // точку на ⚙ не дублируем, пока висит явная кнопка
+  // don't also show the gear dot while the explicit button is up
   const gd=$("#gear-dot"); if(gd) gd.classList.toggle("on", false);
 }
 function toggleSettings(){ const m=$("#settings-menu"); const open=m.classList.toggle("hidden"); $("#btn-settings").setAttribute("aria-expanded", String(!open)); }
@@ -635,7 +635,7 @@ function editKey(){
   const inp=$("#m-key"); if(inp) setTimeout(()=>{inp.focus(); inp.select();},60);
 }
 
-/* ---------------- ui-хелперы ---------------- */
+/* ---------------- ui helpers ---------------- */
 function toast(msg,kind){
   const e=el("div","toast"+(kind?" "+kind:""),escapeHtml(msg));
   $("#toasts").appendChild(e);
@@ -651,8 +651,8 @@ function modal(title,bodyHtml,actions){
 function closeModal(){ $("#modal").classList.add("hidden"); }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
 
-/* ---------------- амбиентный фон по иконке выбранной игры ---------------- */
-function vivid(c){                          // поднять яркость тусклого цвета, сохранив оттенок
+/* ---------------- ambient background from the selected game's icon ---------------- */
+function vivid(c){                          // boost a dim color's brightness while keeping its hue
   const mx = Math.max(c[0], c[1], c[2], 1);
   const k = Math.min(225 / mx, 2.6);
   return [Math.min(255, Math.round(c[0]*k)),
@@ -667,14 +667,14 @@ function setAmbient(c1, c2){
 }
 function resetAmbient(){
   const r = document.documentElement.style;
-  r.removeProperty("--amb-1"); r.removeProperty("--amb-2");  // вернуть коралл/мяту по умолчанию
+  r.removeProperty("--amb-1"); r.removeProperty("--amb-2");  // restore the default coral/mint
 }
 let _ambToken = 0;
 function ambientFromImage(src){
   const token = ++_ambToken;
   const img = new Image();
   img.onload = ()=>{
-    if(token !== _ambToken) return;            // выбрали другую игру — отменяем
+    if(token !== _ambToken) return;            // a different game was selected — cancel
     try{
       const n = 24, cv = document.createElement("canvas"); cv.width = cv.height = n;
       const ctx = cv.getContext("2d", {willReadFrequently:true});
@@ -682,18 +682,18 @@ function ambientFromImage(src){
       const d = ctx.getImageData(0, 0, n, n).data;
       let r=0, g=0, b=0, cnt=0, best=null, bestScore=-1;
       for(let i=0;i<d.length;i+=4){
-        if(d[i+3] < 128) continue;             // прозрачные пиксели мимо
+        if(d[i+3] < 128) continue;             // skip transparent pixels
         const R=d[i], G=d[i+1], B=d[i+2];
         r+=R; g+=G; b+=B; cnt++;
         const mx=Math.max(R,G,B), mn=Math.min(R,G,B);
-        const score=(mx-mn)*0.75 + mx*0.25;    // самый сочный пиксель — акцент
+        const score=(mx-mn)*0.75 + mx*0.25;    // the most vivid pixel becomes the accent
         if(score>bestScore){ bestScore=score; best=[R,G,B]; }
       }
       if(!cnt) return;
       const avg=[Math.round(r/cnt), Math.round(g/cnt), Math.round(b/cnt)];
       setAmbient(best||avg, avg);
-    }catch(_){ /* canvas tainted/ошибка — оставляем как есть */ }
+    }catch(_){ /* canvas tainted/error — leave as is */ }
   };
-  img.onerror = ()=>{ if(token===_ambToken) resetAmbient(); };  // нет иконки — дефолт
+  img.onerror = ()=>{ if(token===_ambToken) resetAmbient(); };  // no icon — default
   img.src = src;
 }

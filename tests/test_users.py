@@ -9,7 +9,7 @@ from steam.users import (account_steamid64, load_users, account_name,
 
 class UsersTest(unittest.TestCase):
     def test_steamid64_mapping(self):
-        # проверенный реальный пример: uid 11111111 -> 76561197971376839
+        # a verified real example: uid 11111111 -> 76561197971376839
         self.assertEqual(account_steamid64("11111111"), 76561197971376839)
 
     def _steam_with_users(self, tmp):
@@ -23,7 +23,7 @@ class UsersTest(unittest.TestCase):
             users = load_users(tmp)
             self.assertEqual(users["76561197971376839"]["PersonaName"], "Sam")
             self.assertEqual(account_name(tmp, "11111111"), "Sam")
-            self.assertIsNone(account_name(tmp, "1"))  # неизвестный uid -> None
+            self.assertIsNone(account_name(tmp, "1"))  # unknown uid -> None
 
     def test_avatar_path(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -31,7 +31,7 @@ class UsersTest(unittest.TestCase):
             os.makedirs(ac)
             open(os.path.join(ac, "76561197971376839.png"), "wb").close()
             self.assertTrue(account_avatar_path(tmp, "11111111").endswith("76561197971376839.png"))
-            self.assertIsNone(account_avatar_path(tmp, "1"))  # нет файла
+            self.assertIsNone(account_avatar_path(tmp, "1"))  # no file
 
     def test_account_infos(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -33,9 +33,9 @@ class LibraryTest(unittest.TestCase):
             cfg = tmp
             grid = os.path.join(cfg, "grid")
             os.makedirs(grid)
-            # осиротевший non-Steam арт
+            # orphaned non-Steam art
             open(os.path.join(grid, "%dp.png" % (NONSTEAM_MIN + 5)), "wb").close()
-            # обычная Steam-игра — не трогаем
+            # regular Steam game — left alone
             open(os.path.join(grid, "440p.png"), "wb").close()
             vdf = os.path.join(cfg, "shortcuts.vdf")
             with open(vdf, "wb") as f:
@@ -100,7 +100,7 @@ class FacadeTest(unittest.TestCase):
 
     def test_key_engine_names_present(self):
         import steam
-        # имена, на которые опираются CLI и сервер — должны существовать
+        # names the CLI and server rely on — must exist
         for name in ("find_steam_path", "load_api_key", "list_accounts",
                      "account_paths", "list_games", "clean_name", "ART_TYPES",
                      "search_games", "list_arts", "SGDBError", "SGDBAuthError",
