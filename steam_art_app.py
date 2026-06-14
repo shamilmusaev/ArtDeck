@@ -156,6 +156,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._json({"items": items})
         if path == "/api/autofill":
             return self._autofill_sse(q, key)
+        if path == "/api/open":
+            u2 = q.get("url", [""])[0]
+            if u2.startswith(("https://www.steamgriddb.com", "https://steamgriddb.com")):
+                import webbrowser
+                webbrowser.open(u2)
+                return self._json({"ok": True})
+            return self._err("bad-url", 400)
         return self._err("unknown", 404)
 
     def _send_index(self):

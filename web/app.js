@@ -41,7 +41,7 @@ function applyStatic(){
   document.querySelectorAll("[data-i18n]").forEach(e=>{ e.textContent = t(e.dataset.i18n); });
   $("#filter").placeholder = t("filter_games");
   $("#search").placeholder = t("search_sgdb");
-  $("#btn-lang").textContent = t("lang_name");
+  $("#lang-label").textContent = t("lang_name");
   document.documentElement.lang = LANG;
 }
 
@@ -183,9 +183,10 @@ async function selectGame(g,row){
   if(row) row.classList.add("active");
   ambientFromImage(`/api/gameicon?account=${enc(state.account)}&appid=${g.appid}`);
   $("#match-name").textContent=g.name;
-  $("#match-sub").textContent=t("searching");
   $("#candidates").classList.add("hidden");
   $("#empty").classList.add("hidden");
+  if(!state.keyOk){ $("#match-sub").textContent=t("need_key_sub"); showNeedKey(); return; }
+  $("#match-sub").textContent=t("searching");
   renderSkeletons();
   try{
     const d=await jget("/api/search?q="+enc(g.name));
@@ -489,9 +490,26 @@ function setKey(ok){
   b.classList.remove("ok","bad"); b.classList.add(ok?"ok":"bad");
   $("#key-label").textContent = ok ? t("key_ok") : t("key_need");
 }
+const SGDB_KEY_URL = "https://www.steamgriddb.com/profile/preferences/api";
+function openExternal(url){ fetch("/api/open?url="+enc(url)).catch(()=>{}); }
+
+function showNeedKey(){
+  const grid=$("#grid"); grid.dataset.skel=""; grid.innerHTML="";
+  const box=el("div","needkey");
+  box.appendChild(el("div","needkey-ic","🔑"));
+  box.appendChild(el("div","needkey-t",t("need_key_title")));
+  box.appendChild(el("div","needkey-s",t("need_key_body")));
+  const b=el("button","btn primary",t("key_need"));
+  b.addEventListener("click",editKey);
+  box.appendChild(b);
+  grid.appendChild(box);
+}
+
 function editKey(){
   modal(t("key_title"),
-    `<p style="margin:0 0 4px">${t("key_hint")}</p><input type="text" id="m-key" placeholder="${t("key_placeholder")}">`,
+    `<div class="key-steps">${t("key_steps")}</div>
+     <button type="button" class="btn ghost keyget" id="m-getkey">${escapeHtml(t("key_get"))} ↗</button>
+     <input type="text" id="m-key" placeholder="${t("key_placeholder")}" autocomplete="off">`,
     [{x:t("cancel"),cls:"ghost",fn:closeModal},
      {x:t("save"),cls:"primary",fn:async()=>{
         const v=$("#m-key").value.trim(); closeModal();
@@ -499,6 +517,8 @@ function editKey(){
         setKey(r.key_ok); toast(r.key_ok?t("key_saved"):t("key_cleared"), r.key_ok?"ok":"bad");
         if(r.key_ok && state.selected) selectGame(state.selected, document.querySelector(".game.active"));
      }}]);
+  const gb=$("#m-getkey"); if(gb) gb.addEventListener("click",()=>openExternal(SGDB_KEY_URL));
+  const inp=$("#m-key"); if(inp) setTimeout(()=>inp.focus(),60);
 }
 
 /* ---------------- ui-хелперы ---------------- */
