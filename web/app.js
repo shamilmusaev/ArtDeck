@@ -378,13 +378,28 @@ function meta(a){
 function openLight(a){
   state.selectedArt=a;
   const stage=$("#light-stage"); stage.innerHTML="";
+  // рамку под медиа резервируем сразу в финальной пропорции арта — скелет (shimmer)
+  // занимает тот же размер, что и будущая обложка, без «прыжка» при дозагрузке.
+  let w=a.width, h=a.height;
+  if(!(w&&h)){ const p=((TYPE[state.type]&&TYPE[state.type].ar)||"2/3").split("/").map(Number); w=p[0]; h=p[1]; }
+  const frame=el("div","light-frame loading");
+  frame.style.setProperty("--ar", `${w}/${h}`);
+  frame.style.setProperty("--arn", String(w/h));
+  const ready=()=>frame.classList.remove("loading");
   if(IS_VIDEO(a.thumb)){
     // анимацию показываем лёгким .webm-превью, тяжёлый url качаем только при установке
-    const v=el("video"); v.src=a.thumb; v.muted=true; v.loop=true; v.autoplay=true; v.controls=false;
-    v.setAttribute("playsinline",""); stage.appendChild(v);
+    const v=el("video"); v.muted=true; v.loop=true; v.autoplay=true; v.controls=false;
+    v.setAttribute("playsinline","");
+    v.addEventListener("loadeddata",ready); v.addEventListener("error",ready);
+    v.src=a.thumb; frame.appendChild(v);
   } else {
-    const img=el("img"); img.src=a.url||a.thumb; stage.appendChild(img);
+    const img=el("img");
+    img.addEventListener("load",ready); img.addEventListener("error",ready);
+    img.src=a.url||a.thumb;
+    if(img.complete && img.naturalWidth>0) ready();
+    frame.appendChild(img);
   }
+  stage.appendChild(frame);
   const dims=(a.width&&a.height)?`${a.width}×${a.height}`:"";
   $("#light-meta").innerHTML = dims + (a.style?` · <b>${escapeHtml(a.style)}</b>`:"") + (a.animated?` · ${t("animated_badge")}`:"");
   const ap=$("#light-apply"); ap.textContent=t("apply"); ap.onclick=()=>{ applyArt(a,null); closeLight(); };
