@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
-"""Регистрация кастомного арта в кэше нового клиента Steam.
+"""Register custom art in the newer Steam client's cache.
 
-В свежих версиях Steam мало положить файл в config\\grid — клиент смотрит в
-userdata\\<uid>\\config\\librarycache\\<appid>.json, запись "customimage".
-Без неё анимированные обложки показываются статикой (а иногда арт игнорируется).
-Эта функция дописывает/обновляет запись, сохраняя остальные (achievements и т.п.) —
-ровно то, что делает родной «Set Custom Artwork» в Steam."""
+On recent Steam versions, dropping a file into config\\grid is not enough — the
+client also reads a "customimage" entry from userdata\\<uid>\\config\\
+librarycache\\<appid>.json. Without it, animated covers render as a still image
+(and sometimes the art is ignored entirely). This writes/updates that entry while
+preserving the others (achievements, etc.) — exactly what Steam's own
+"Set Custom Artwork" does."""
 import json
 import os
 
-# Значение по умолчанию (позиция лого на hero — как пишет сам Steam).
+# Default value (logo position on the hero, matching what Steam itself writes).
 _DEFAULT_DATA = {
     "nVersion": 1,
     "logoPosition": {"pinnedPosition": "BottomLeft", "nWidthPct": 50.0, "nHeightPct": 50.0},
@@ -22,9 +23,9 @@ def librarycache_json(steam_path, uid, appid):
 
 
 def register_custom_image(steam_path, uid, appid):
-    """Гарантирует наличие непустой записи customimage в librarycache/<appid>.json.
-    Сохраняет уже существующий customimage.data (например, позицию лого) и прочие
-    записи. Возвращает путь к json. Тихо игнорирует, если запись уже корректна."""
+    """Ensure a non-empty customimage entry exists in librarycache/<appid>.json.
+    Preserves an existing customimage.data (e.g. the logo position) and any other
+    entries. Returns the json path. Quietly leaves a correct entry untouched."""
     p = librarycache_json(steam_path, uid, appid)
 
     entries = []
@@ -44,8 +45,8 @@ def register_custom_image(steam_path, uid, appid):
             val = item[1] if isinstance(item[1], dict) else {}
             d = val.get("data")
             if isinstance(d, dict) and d:
-                existing_data = d  # сохраняем уже выставленную позицию лого и пр.
-            continue  # пересоберём запись ниже
+                existing_data = d  # keep the already-set logo position etc.
+            continue  # rebuilt below
         rest.append(item)
 
     data = existing_data if existing_data is not None else dict(_DEFAULT_DATA)

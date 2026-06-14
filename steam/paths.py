@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Поиск Steam, API-ключа и путей аккаунтов."""
+"""Locating Steam, the API key, and per-account paths."""
 import glob
 import os
 import sys
 
-# Каталог приложения = там, где лежит steam_art.py / .exe (НЕ внутри пакета steam/),
-# чтобы steam_art.key читался рядом с приложением. В собранном exe (PyInstaller)
-# это папка с самим .exe, а не временная _MEIPASS.
+# Application directory = where steam_art.py / the .exe lives (NOT inside the
+# steam/ package), so steam_art.key sits next to the app. In a PyInstaller build
+# this is the folder containing the .exe, not the temporary _MEIPASS dir.
 if getattr(sys, "frozen", False):
     APP_DIR = os.path.dirname(sys.executable)
 else:
@@ -19,7 +19,7 @@ DEFAULT_STEAM_PATHS = [
 
 
 def load_api_key(cli_key):
-    """API-ключ: приоритет cli_key -> env STEAMGRIDDB_API_KEY -> файл steam_art.key (в APP_DIR)."""
+    """API key, in priority order: cli_key -> env STEAMGRIDDB_API_KEY -> steam_art.key in APP_DIR."""
     if cli_key:
         return cli_key.strip()
     env = os.environ.get("STEAMGRIDDB_API_KEY")
@@ -67,7 +67,7 @@ def find_steam_path(cli_path):
 
 
 def list_accounts(steam_path):
-    """Список userdata-аккаунтов (uid) с shortcuts.vdf."""
+    """userdata account ids (uid) that have a shortcuts.vdf."""
     userdata = os.path.join(steam_path, "userdata")
     out = []
     for vdf in sorted(glob.glob(os.path.join(userdata, "*", "config", "shortcuts.vdf"))):
@@ -78,6 +78,6 @@ def list_accounts(steam_path):
 
 
 def account_paths(steam_path, uid):
-    """Возвращает (vdf_path, grid_dir) для аккаунта."""
+    """Return (vdf_path, grid_dir) for an account."""
     base = os.path.join(steam_path, "userdata", uid, "config")
     return os.path.join(base, "shortcuts.vdf"), os.path.join(base, "grid")

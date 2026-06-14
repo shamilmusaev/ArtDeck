@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
-"""Пост-проверка применённого арта. Steam не сообщает «показал ли он обложку»,
-но мы можем поймать реальные причины, по которым она не появляется:
-  - файл повреждён/нулевой (битая загрузка),
-  - в том же слоте остался файл другого расширения, который не удалось удалить
-    (обычно Steam держал его открытым) → Steam покажет старый файл,
-  - (для анимации) не записалась регистрация customimage."""
+"""Post-apply check of installed art. Steam doesn't report whether it showed the
+cover, but we can catch the real reasons it might not appear:
+  - the file is corrupt/empty (a broken download),
+  - a file of another extension is left in the same slot and couldn't be deleted
+    (usually Steam held it open) -> Steam shows the old one,
+  - (for animation) the customimage registration didn't get written."""
 import os
 
 from steam.arts import ART_TYPES, ART_EXTS
 
 
 def valid_image(path):
-    """Файл существует, не пустой и начинается с сигнатуры PNG/JPEG/WEBP/GIF."""
+    """File exists, is non-empty, and starts with a PNG/JPEG/WEBP/GIF signature."""
     try:
         if os.path.getsize(path) == 0:
             return False
@@ -31,8 +31,8 @@ def valid_image(path):
 
 
 def competing_files(grid_dir, appid, art_type, applied_path):
-    """Файлы того же слота (<appid><suffix>) с другим расширением — их Steam может
-    показать вместо только что применённого."""
+    """Files in the same slot (<appid><suffix>) with a different extension —
+    Steam may show one of these instead of the art we just applied."""
     suffix = ART_TYPES[art_type]["suffix"]
     applied = os.path.basename(applied_path).lower()
     out = []
@@ -46,8 +46,8 @@ def competing_files(grid_dir, appid, art_type, applied_path):
 
 
 def verify_applied(grid_dir, appid, art_type, dest):
-    """Проверяет применённый арт. Возвращает {ok, code, files}.
-    code: None (всё хорошо) | 'corrupt' (битый файл) | 'competing' (дубль в слоте)."""
+    """Check the applied art. Returns {ok, code, files}.
+    code: None (all good) | 'corrupt' (broken file) | 'competing' (dup in slot)."""
     if not dest or not os.path.isfile(dest) or not valid_image(dest):
         return {"ok": False, "code": "corrupt", "files": []}
     comp = competing_files(grid_dir, appid, art_type, dest)

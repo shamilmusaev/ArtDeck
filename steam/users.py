@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
-"""Имена аккаунтов (loginusers.vdf) и аватары (avatarcache). uid <-> SteamID64."""
+"""Account names (loginusers.vdf) and avatars (avatarcache). uid <-> SteamID64."""
 import os
 
 from steam.vdf import parse_text_vdf
 
-# База SteamID64 для индивидуальных аккаунтов: account_id + это число.
+# SteamID64 base for individual accounts: account_id + this number.
 STEAMID64_BASE = 0x0110000100000000  # = 76561197960265728
 
 
 def account_steamid64(uid):
-    """uid (32-битный account id из userdata) -> SteamID64."""
+    """uid (32-bit account id from userdata) -> SteamID64."""
     return int(uid) + STEAMID64_BASE
 
 
 def load_users(steam_path):
-    """{steamid64_str: {AccountName, PersonaName, ...}} из config/loginusers.vdf."""
+    """{steamid64_str: {AccountName, PersonaName, ...}} from config/loginusers.vdf."""
     p = os.path.join(steam_path, "config", "loginusers.vdf")
     if not os.path.isfile(p):
         return {}
@@ -28,7 +28,7 @@ def load_users(steam_path):
 
 
 def account_name(steam_path, uid):
-    """PersonaName аккаунта или None, если не нашли."""
+    """Account PersonaName, or None if not found."""
     sid = str(account_steamid64(uid))
     info = load_users(steam_path).get(sid)
     if info:
@@ -37,14 +37,14 @@ def account_name(steam_path, uid):
 
 
 def account_avatar_path(steam_path, uid):
-    """Путь к локальному аватару <steamid64>.png или None."""
+    """Path to the local avatar <steamid64>.png, or None."""
     sid = str(account_steamid64(uid))
     p = os.path.join(steam_path, "config", "avatarcache", sid + ".png")
     return p if os.path.isfile(p) else None
 
 
 def account_infos(steam_path, uids):
-    """[{uid, name, has_avatar}] для списка uid (один проход по loginusers)."""
+    """[{uid, name, has_avatar}] for a list of uids (one pass over loginusers)."""
     users = load_users(steam_path)
     out = []
     for uid in uids:

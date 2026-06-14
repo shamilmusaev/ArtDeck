@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Клиент SteamGridDB API: поиск игр и выборка артов, скачивание файлов."""
+"""SteamGridDB API client: game search, art listing, file download."""
 import json
 import os
 import time
@@ -9,12 +9,12 @@ API_BASE = "https://www.steamgriddb.com/api/v2"
 
 
 class SGDBError(Exception):
-    """Временная/некритичная ошибка — пропускаем арт или игру, прогон продолжается."""
+    """Transient/non-fatal error — skip the art or game and keep going."""
     pass
 
 
 class SGDBAuthError(SGDBError):
-    """Фатальная ошибка — неверный ключ. Прогон прерывается."""
+    """Fatal error — the key is wrong. Abort the run."""
     pass
 
 
@@ -37,21 +37,21 @@ def api_get(path, api_key, params=None, retries=3):
                 raise SGDBError("invalid response from SteamGridDB for %s" % path)
         except error.HTTPError as e:
             if e.code in (401, 403):
-                raise SGDBAuthError("API-ключ отклонён (HTTP %d). Проверь steam_art.key / STEAMGRIDDB_API_KEY." % e.code)
+                raise SGDBAuthError("API key rejected (HTTP %d). Check steam_art.key / STEAMGRIDDB_API_KEY." % e.code)
             if e.code == 404:
                 return {"success": False, "data": []}
             last_err = "HTTP %d" % e.code
             if e.code not in (429, 500, 502, 503, 504):
-                raise SGDBError("%s при запросе %s" % (last_err, path))
+                raise SGDBError("%s requesting %s" % (last_err, path))
         except (error.URLError, TimeoutError, OSError) as e:
             last_err = getattr(e, "reason", e)
         if attempt < retries - 1:
             time.sleep(1.5 * (attempt + 1))
-    raise SGDBError("сеть/таймаут (%s) после %d попыток" % (last_err, retries))
+    raise SGDBError("network/timeout (%s) after %d attempts" % (last_err, retries))
 
 
 def clean_name(name):
-    for ch in ("™", "®", "©"):  # ™ ® ©
+    for ch in ("™", "®", "©"):
         name = name.replace(ch, "")
     return " ".join(name.split())
 
@@ -66,7 +66,7 @@ def search_game_id(name, api_key):
 
 
 def search_games(name, api_key, limit=20):
-    """Список кандидатов: [{id, name}, ...]."""
+    """Candidate list: [{id, name}, ...]."""
     term = clean_name(name)
     if not term:
         return []
@@ -78,7 +78,7 @@ def search_games(name, api_key, limit=20):
 
 
 def list_arts_raw(endpoint, game_id, api_key, params):
-    """Низкоуровневая выборка артов: возвращает сырой список dict из data."""
+    """Low-level art fetch: returns the raw list of dicts from data."""
     payload = api_get("/%s/game/%d" % (endpoint, game_id), api_key, params)
     return payload.get("data") or []
 

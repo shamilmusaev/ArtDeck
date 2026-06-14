@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Парсинг бинарного VDF (shortcuts.vdf) + регистронезависимый доступ к dict."""
+"""Binary VDF parsing (shortcuts.vdf) plus case-insensitive dict access."""
 import struct
 
 
 def parse_binary_vdf(data):
-    """Разбирает бинарный VDF в dict. Типы: 0x00 map, 0x01 str, 0x02 int32, 0x07 int64, 0x08 end."""
+    """Parse a binary VDF into a dict. Types: 0x00 map, 0x01 str, 0x02 int32, 0x07 int64, 0x08 end."""
     pos = 0
 
     def read_cstring():
@@ -34,7 +34,7 @@ def parse_binary_vdf(data):
                 result[key] = struct.unpack_from("<q", data, pos)[0]
                 pos += 8
             else:
-                raise ValueError("Неизвестный тип VDF: 0x%02x на позиции %d" % (t, pos))
+                raise ValueError("unknown VDF type 0x%02x at position %d" % (t, pos))
 
     t = data[pos]
     pos += 1
@@ -43,7 +43,7 @@ def parse_binary_vdf(data):
 
 
 def get_ci(d, key):
-    """Достаёт значение из dict без учёта регистра ключа."""
+    """Look up a value in a dict ignoring key case."""
     kl = key.lower()
     for k, v in d.items():
         if k.lower() == kl:
@@ -55,7 +55,7 @@ _VDF_ESCAPES = {"n": "\n", "t": "\t"}
 
 
 def _tokenize_text_vdf(text):
-    """Токенайзер текстового VDF: кавыченные строки, { и }, // комментарии."""
+    """Tokenize a text VDF: quoted strings, { and }, // comments."""
     tokens = []
     i, n = 0, len(text)
     while i < n:
@@ -80,9 +80,9 @@ def _tokenize_text_vdf(text):
                     buf.append(text[i])
                     i += 1
             tokens.append("".join(buf))
-            i += 1  # закрывающая кавычка
+            i += 1  # closing quote
         else:
-            # неэкранированный токен (редко в Steam-файлах)
+            # bare (unquoted) token — rare in Steam files
             j = i
             while j < n and text[j] not in ' \t\r\n"{}':
                 j += 1
@@ -92,7 +92,7 @@ def _tokenize_text_vdf(text):
 
 
 def parse_text_vdf(text):
-    """Разбирает текстовый VDF (.acf, libraryfolders.vdf, loginusers.vdf) в dict."""
+    """Parse a text VDF (.acf, libraryfolders.vdf, loginusers.vdf) into a dict."""
     tokens = _tokenize_text_vdf(text)
     pos = 0
 
@@ -113,7 +113,7 @@ def parse_text_vdf(text):
                 obj[key] = tokens[pos]
                 pos += 1
             else:
-                obj[key] = ""  # ключ без значения — не «съедаем» закрывающую }
+                obj[key] = ""  # key with no value — don't consume the closing }
         return obj
 
     return parse_obj()

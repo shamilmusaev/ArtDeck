@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
-"""Официальный арт Steam для установленных игр (appcache\\librarycache\\<appid>\\).
+"""Steam's own art for installed games (appcache\\librarycache\\<appid>\\).
 
-Для обычных Steam-игр обложку/hero/лого/баннер кладёт сам Steam — не в нашу
-grid-папку, а в свой librarycache. Это нужно, чтобы:
-  - в списке показывать, что у игры арт ЕСТЬ (а не «пусто»),
-  - в карточке «Текущая» показывать реальный текущий арт, а не «none»."""
+For regular Steam games, Steam puts the cover/hero/logo/banner in its librarycache,
+not in our grid folder. We read it so we can:
+  - show in the list that a game DOES have art (rather than "empty"),
+  - show the real current art in the "Current" card instead of "none"."""
 import os
 
-# Имя файла в librarycache\<appid>\ для каждого нашего типа арта.
+# File name in librarycache\<appid>\ for each of our art types.
 _OFFICIAL = {
     "cover":  ("library_600x900.jpg", "library_600x900_2x.jpg"),
     "banner": ("header.jpg", "library_header.jpg"),
     "hero":   ("library_hero.jpg",),
     "logo":   ("logo.png", "logo_2x.png"),
-    "icon":   (),  # в новой раскладке нет надёжного иконочного файла
+    "icon":   (),  # the newer layout has no reliable icon file
 }
 
 
@@ -27,7 +27,7 @@ def _flat_name(appid, art_type):
 
 
 def official_art(steam_path, appid, art_type):
-    """Путь к официальному файлу Steam для (appid, тип) или None."""
+    """Path to Steam's own file for (appid, art_type), or None."""
     sub = os.path.join(steam_path, "appcache", "librarycache", str(appid))
     for fn in _OFFICIAL.get(art_type, ()):
         p = os.path.join(sub, fn)

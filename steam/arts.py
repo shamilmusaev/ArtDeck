@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Логика артов: типы, статус, применение, выборка вариантов для GUI."""
+"""Art logic: types, status, applying, and listing variants for the GUI."""
 import os
 from urllib import parse
 
 from steam.sgdb import list_arts_raw, download
 
-# Описание типов артов. suffix — то, что приписывается к <appid> в имени файла.
+# Art types. suffix is what gets appended to <appid> in the file name.
 ART_TYPES = {
     "cover":  {"endpoint": "grids",  "suffix": "p",     "params": {"dimensions": "600x900"}},
     "banner": {"endpoint": "grids",  "suffix": "",      "params": {"dimensions": "460x215,920x430"}},
@@ -42,7 +42,7 @@ def art_status(grid_dir, appid, names=None):
 
 
 def fetch_art_url(game_id, art_cfg, api_key):
-    """Первый подходящий URL арта (авто-режим)."""
+    """First matching art URL (auto mode)."""
     params = dict(art_cfg["params"])
     params.setdefault("types", "static")
     data = list_arts_raw(art_cfg["endpoint"], game_id, api_key, params)
@@ -55,9 +55,9 @@ def fetch_art_url(game_id, art_cfg, api_key):
 
 
 def list_arts(game_id, art_type, api_key, limit=40, animated=False):
-    """Список вариантов арта данного типа:
+    """Variants of the given art type:
     [{url, thumb, width, height, style, animated}, ...].
-    animated=True -> запрашиваем только анимированные (types=animated)."""
+    animated=True -> request animated only (types=animated)."""
     cfg = ART_TYPES[art_type]
     art_kind = "animated" if animated else "static"
     data = list_arts_raw(cfg["endpoint"], game_id, api_key, {"types": art_kind})
@@ -71,8 +71,8 @@ def list_arts(game_id, art_type, api_key, limit=40, animated=False):
             "style": a.get("style"),
             "animated": animated,
         })
-    # Раздел grids отдаёт и вертикальные (обложки), и горизонтальные (баннеры) вперемешку.
-    # Фильтруем по ориентации: обложка — вертикальная, баннер — горизонтальная.
+    # The grids endpoint returns both vertical (covers) and horizontal (banners)
+    # mixed together. Filter by orientation: cover = portrait, banner = landscape.
     def portrait(a):
         return not (a["width"] and a["height"]) or a["height"] >= a["width"]
 
@@ -88,14 +88,14 @@ def list_arts(game_id, art_type, api_key, limit=40, animated=False):
 
 
 def apply_art(grid_dir, appid, art_type, url):
-    """Качает арт в <appid><suffix><ext>, удаляя дубли других расширений того же типа."""
+    """Download art to <appid><suffix><ext>, removing other-extension dupes of the same slot."""
     suffix = ART_TYPES[art_type]["suffix"]
     ext = os.path.splitext(parse.urlparse(url).path)[1].lower() or ".png"
     if ext not in ART_EXTS:
         ext = ".png"
-    # Steam (особенно для установленных игр) читает обложку из .png/.jpg, но игнорирует
-    # .webp; формат он определяет по содержимому, поэтому webp в файле .png рендерится
-    # нормально. Сохраняем webp под .png — иначе арт «не применяется».
+    # Steam (especially for installed games) reads the cover from .png/.jpg but
+    # ignores .webp; it sniffs the format by content, so webp bytes inside a .png
+    # render fine. We save webp as .png — otherwise the art "doesn't apply".
     if ext == ".webp":
         ext = ".png"
     os.makedirs(grid_dir, exist_ok=True)
@@ -114,9 +114,9 @@ def apply_art(grid_dir, appid, art_type, url):
 
 
 def revert_art(grid_dir, appid, art_type):
-    """Удаляет наш кастомный арт этого слота (все расширения). После этого Steam
-    показывает свой оригинал (для установленных игр) или серую заглушку (non-Steam).
-    Возвращает список удалённых файлов."""
+    """Delete our custom art for this slot (all extensions). Afterwards Steam shows
+    its own original (for installed games) or the gray placeholder (non-Steam).
+    Returns the list of deleted files."""
     suffix = ART_TYPES[art_type]["suffix"]
     removed = []
     for e in ART_EXTS:

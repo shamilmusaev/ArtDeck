@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Поиск локальной картинки-иконки для строки списка игр.
-Steam менял раскладку librarycache между версиями, поэтому пробуем несколько мест."""
+"""Find a local icon image for a game-list row. Steam changed the librarycache
+layout between versions, so we try several locations."""
 import glob
 import os
 
-# Приоритет файлов внутри appcache/librarycache/<appid>/ (новая раскладка).
-# Явного «иконочного» файла там нет — берём узнаваемую мелкую обложку/лого.
+# File priority inside appcache/librarycache/<appid>/ (the newer layout). There's
+# no explicit "icon" file there, so we take a recognizable small cover/logo.
 STEAM_IMAGE_PRIORITY = (
     "library_600x900.jpg",
     "library_600x900_2x.jpg",
@@ -16,9 +16,9 @@ STEAM_IMAGE_PRIORITY = (
 
 
 def steam_game_image(steam_path, appid):
-    """Лучшая доступная картинка для Steam-игры или None.
-    Порядок: legacy-плоский <appid>_icon.jpg -> файлы в подпапке <appid>/ по приоритету
-    -> любой не-blur .jpg/.png в подпапке (хеш-именованные ассеты)."""
+    """Best available image for a Steam game, or None. Order: legacy flat
+    <appid>_icon.jpg -> files in the <appid>/ subfolder by priority -> any
+    non-blur .jpg/.png in the subfolder (hash-named assets)."""
     lc = os.path.join(steam_path, "appcache", "librarycache")
     legacy = os.path.join(lc, "%d_icon.jpg" % appid)
     if os.path.isfile(legacy):
@@ -38,8 +38,8 @@ def steam_game_image(steam_path, appid):
 
 
 def game_icon_path(steam_path, game):
-    """Путь к иконке для игры (любого вида) или None.
-    non-Steam -> поле icon ярлыка (если файл существует); Steam -> steam_game_image."""
+    """Icon path for a game of any kind, or None. non-Steam -> the shortcut's
+    icon field (if the file exists); Steam -> steam_game_image."""
     if game.get("kind") == "steam":
         return steam_game_image(steam_path, game["appid"])
     icon = game.get("icon") or ""
