@@ -106,6 +106,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 "steam_path": STEAM,
                 "accounts": engine.account_infos(STEAM, accounts) if STEAM else [],
                 "key_ok": bool(key),
+                "key": key or "",
             })
         if path == "/api/games":
             acc = q.get("account", [None])[0]
@@ -344,7 +345,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 val = (data.get("key") or "").strip()
                 with open(os.path.join(SCRIPTDIR, "steam_art.key"), "w", encoding="utf-8") as f:
                     f.write(val)
-                return self._json({"ok": True, "key_ok": bool(val)})
+                return self._json({"ok": True, "key_ok": bool(val), "key": val})
             return self._err("unknown", 404)
         except Exception as e:
             return self._err(e, 500)

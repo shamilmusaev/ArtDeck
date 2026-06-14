@@ -217,7 +217,7 @@ main{
   border-radius:8px; background:transparent; border:none; color:var(--faint); cursor:pointer; transition:.15s}
 .refresh-btn:hover{color:var(--mint); background:var(--ink-3)}
 .refresh-btn svg{width:16px; height:16px}
-.refresh-btn.spin svg{animation:spin .7s linear}
+.refresh-btn.spin svg{animation:spin .7s linear infinite}
 
 /* скелет списка игр во время сканирования (refresh / смена аккаунта/вкладки) */
 .scan-banner{display:flex; align-items:center; gap:9px; padding:6px 9px 10px;

@@ -26,7 +26,7 @@ const state = {
   accounts:[], account:null, source:"shortcut",
   games:[], selected:null, gameId:null, matchName:null,
   type:"cover", animated:false, candidates:[], selectedArt:null,
-  reqToken:0, keyOk:false,
+  reqToken:0, keyOk:false, key:"",
 };
 
 const $  = s=>document.querySelector(s);
@@ -88,6 +88,7 @@ async function init(){
 
   try{
     const st = await jget("/api/state");
+    state.key = st.key || "";
     setKey(st.key_ok);
     if(!st.steam_path){ toast(t("steam_not_found"),"bad"); return; }
     state.accounts = st.accounts || [];
@@ -172,15 +173,18 @@ function renderGameSkeletons(){
   }
 }
 
-async function loadGames(){
+async function loadGames(minMs=0){
   if(!state.account) return;
   state.selected=null; state.gameId=null; state.matchName=null;
   $("#match-name").textContent=t("pick_game"); $("#match-sub").textContent="";
   $("#grid").innerHTML=""; $("#candidates").classList.add("hidden");
   renderGameSkeletons();                      // скелет + «сканируем…» пока читаем библиотеку
+  const t0=Date.now();
   try{
     const d = await jget(`/api/games?account=${enc(state.account)}&source=${state.source}`);
     state.games = d.games||[];
+    const wait=minMs-(Date.now()-t0);         // показываем скелет не короче minMs (refresh = 2с)
+    if(wait>0) await new Promise(r=>setTimeout(r,wait));
     renderGames();
     const first=document.querySelector("#games .game");
     if(first) first.click();
@@ -551,16 +555,17 @@ function editKey(){
   modal(t("key_title"),
     `<div class="key-steps">${t("key_steps")}</div>
      <button type="button" class="btn ghost keyget" id="m-getkey">${escapeHtml(t("key_get"))} ↗</button>
-     <input type="text" id="m-key" placeholder="${t("key_placeholder")}" autocomplete="off">`,
+     <input type="text" id="m-key" placeholder="${t("key_placeholder")}" autocomplete="off" value="${escapeHtml(state.key||"")}">`,
     [{x:t("cancel"),cls:"ghost",fn:closeModal},
      {x:t("save"),cls:"primary",fn:async()=>{
         const v=$("#m-key").value.trim(); closeModal();
         const r=await jpost("/api/key",{key:v});
+        state.key = r.key || "";
         setKey(r.key_ok); toast(r.key_ok?t("key_saved"):t("key_cleared"), r.key_ok?"ok":"bad");
         if(r.key_ok && state.selected) selectGame(state.selected, document.querySelector(".game.active"));
      }}]);
   const gb=$("#m-getkey"); if(gb) gb.addEventListener("click",()=>openExternal(SGDB_KEY_URL));
-  const inp=$("#m-key"); if(inp) setTimeout(()=>inp.focus(),60);
+  const inp=$("#m-key"); if(inp) setTimeout(()=>{inp.focus(); inp.select();},60);
 }
 
 /* ---------------- ui-хелперы ---------------- */
