@@ -103,10 +103,7 @@ body{
 .btn.primary:hover{filter:brightness(1.06)}
 .btn.ghost{background:transparent}
 .btn.ghost:hover{background:var(--ink-3)}
-.btn.lang{padding:0 12px; gap:7px; color:var(--dim)}
-.btn.lang #lang-label{font-family:var(--mono); font-weight:600; letter-spacing:.05em; font-size:12.5px}
-.btn.lang:hover{color:var(--txt)}
-/* разделитель групп в тулбаре: кто → действия → настройки */
+/* toolbar group separator: who -> actions -> settings */
 .ctl-div{width:1px; height:22px; flex:0 0 auto; margin:0 3px;
   background:linear-gradient(180deg,transparent,var(--line-2),transparent)}
 

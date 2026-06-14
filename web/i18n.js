@@ -1,13 +1,11 @@
 "use strict";
-/* ArtDeck — словари локализации (RU/EN) + крошечный движок t().
-   Язык хранится в localStorage("artdeck.lang"). По умолчанию — RU. */
+/* ArtDeck localization dictionaries (RU/EN) plus a tiny t() engine.
+   Language is stored in localStorage("artdeck.lang"); default is EN. */
 
 const I18N = {
   ru: {
     tagline: "обложки для твоей библиотеки",
     account: "Аккаунт",
-    key_ok: "API-ключ: OK",
-    key_none: "Ключ: нет",
     key_need: "Вставьте API-ключ",
     key_btn: "API-ключ",
     autofill: "Дозалить недостающее",
@@ -22,7 +20,6 @@ const I18N = {
     filter_games: "Поиск игры…",
     search_sgdb: "Найти другую игру на SteamGridDB…",
     pick_game: "Выбери игру слева",
-    searching: "Поиск совпадения на SteamGridDB…",
     not_found_manual: "Не найдено, попробуй ручной поиск",
     search_error: "Ошибка поиска: ",
     found_n: n => `Найдено: ${n}`,
@@ -89,7 +86,6 @@ const I18N = {
     removed_n: n => `Удалено файлов: ${n}`,
 
     key_title: "API-ключ SteamGridDB",
-    key_hint: "steamgriddb.com → Preferences → API",
     key_placeholder: "Вставь ключ…",
     save: "Сохранить",
     key_saved: "Ключ сохранён",
@@ -98,8 +94,6 @@ const I18N = {
     disclaimer: "ArtDeck не аффилирован с Valve или SteamGridDB.",
     animated_badge: "ANIM",
 
-    cov_have: "Обложка есть",
-    cov_need: "Нужна обложка",
     cov_full: "Все арты на месте",
     cov_count: n => `${n}/5 артов`,
     cov_missing: "не хватает",
@@ -108,8 +102,6 @@ const I18N = {
   en: {
     tagline: "cover art for your library",
     account: "Account",
-    key_ok: "API key: OK",
-    key_none: "Key: none",
     key_need: "Add API key",
     key_btn: "API key",
     autofill: "Fill missing art",
@@ -124,7 +116,6 @@ const I18N = {
     filter_games: "Search game…",
     search_sgdb: "Find another game on SteamGridDB…",
     pick_game: "Pick a game on the left",
-    searching: "Matching on SteamGridDB…",
     not_found_manual: "Not found, try a manual search",
     search_error: "Search error: ",
     found_n: n => `Found: ${n}`,
@@ -191,7 +182,6 @@ const I18N = {
     removed_n: n => `Files removed: ${n}`,
 
     key_title: "SteamGridDB API key",
-    key_hint: "steamgriddb.com → Preferences → API",
     key_placeholder: "Paste your key…",
     save: "Save",
     key_saved: "Key saved",
@@ -200,8 +190,6 @@ const I18N = {
     disclaimer: "ArtDeck is not affiliated with Valve or SteamGridDB.",
     animated_badge: "ANIM",
 
-    cov_have: "Cover ready",
-    cov_need: "Needs cover",
     cov_full: "All art present",
     cov_count: n => `${n}/5 art`,
     cov_missing: "missing",
