@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-steam_art.py — CLI для движка steam.
-Подтягивает арты (обложку, баннер, hero, logo, icon) для non-Steam игр из
-SteamGridDB и кладёт их в Steam (userdata\\<uid>\\config\\grid).
+steam_art.py — CLI for the steam engine.
+Fetches art (cover, banner, hero, logo, icon) for non-Steam games from
+SteamGridDB and installs it into Steam (userdata\\<uid>\\config\\grid).
 
-Зачем: при добавлении любой игры в Steam как non-Steam ярлыка (ручное добавление,
-эмуляторы, сторонние лаунчеры) Steam часто не получает вертикальную обложку
-600x900 — в библиотеке остаётся серая заглушка. Этот инструмент дозаливает
-недостающие изображения, не трогая то, что уже есть.
+Why: when a game is added to Steam as a non-Steam shortcut (manual add,
+emulators, third-party launchers), Steam often gets no 600x900 vertical cover,
+leaving a gray placeholder in the library. This tool fills the missing images
+without touching what's already there.
 
-Не аффилировано с Valve или SteamGridDB.
+Not affiliated with Valve or SteamGridDB.
 
-Запуск:
-    python steam_art.py                  # все аккаунты, все недостающие арты
-    python steam_art.py --dry-run        # показать план, ничего не качая
+Usage:
+    python steam_art.py                  # all accounts, all missing art
+    python steam_art.py --dry-run        # show the plan, download nothing
     python steam_art.py --account 11111111
-    python steam_art.py --types cover    # только обложки
-    python steam_art.py --force          # перезаписать существующие
-    python steam_art.py --clean          # удалить осиротевшие арты
+    python steam_art.py --types cover    # covers only
+    python steam_art.py --force          # overwrite existing art
+    python steam_art.py --clean          # delete orphaned art
 
-API-ключ SteamGridDB: env STEAMGRIDDB_API_KEY, файл steam_art.key рядом со
-скриптом, либо флаг --api-key.
+SteamGridDB API key: env STEAMGRIDDB_API_KEY, the steam_art.key file next to the
+script, or the --api-key flag.
 """
 import argparse
 import glob
@@ -42,7 +42,7 @@ def process_game(game, grid_dir, types, api_key, force, dry_run, stats):
         cfg = engine.ART_TYPES[t]
         ex = engine.existing_art(grid_dir, appid, cfg["suffix"])
         if ex and not force:
-            print("      %-7s SKIP (есть: %s)" % (t, os.path.basename(ex)))
+            print("      %-7s SKIP (have: %s)" % (t, os.path.basename(ex)))
             stats["skip"] += 1
         else:
             needed.append(t)
@@ -54,11 +54,11 @@ def process_game(game, grid_dir, types, api_key, force, dry_run, stats):
     except engine.SGDBAuthError:
         raise
     except engine.SGDBError as e:
-        print("      -> ошибка поиска (%s), пропуск" % e)
+        print("      -> search error (%s), skipping" % e)
         stats["fail"] += len(needed)
         return
     if game_id is None:
-        print("      -> не найдено на SteamGridDB, пропуск")
+        print("      -> not found on SteamGridDB, skipping")
         stats["notfound"] += len(needed)
         return
     print("      -> SteamGridDB: %s (id %d)" % (matched, game_id))
@@ -74,7 +74,7 @@ def process_game(game, grid_dir, types, api_key, force, dry_run, stats):
             stats["fail"] += 1
             continue
         if not url:
-            print("      %-7s нет арта в базе" % t)
+            print("      %-7s no art in the database" % t)
             stats["notfound"] += 1
             continue
         if dry_run:
@@ -92,20 +92,20 @@ def process_game(game, grid_dir, types, api_key, force, dry_run, stats):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Авто-загрузка артов для non-Steam игр из SteamGridDB.")
-    ap.add_argument("--api-key", help="API-ключ SteamGridDB")
-    ap.add_argument("--steam-path", help="Путь к папке Steam")
-    ap.add_argument("--account", help="Только этот userdata-аккаунт (uid)")
+    ap = argparse.ArgumentParser(description="Auto-download art for non-Steam games from SteamGridDB.")
+    ap.add_argument("--api-key", help="SteamGridDB API key")
+    ap.add_argument("--steam-path", help="Path to the Steam folder")
+    ap.add_argument("--account", help="Only this userdata account (uid)")
     ap.add_argument("--types", default=",".join(engine.ART_TYPES.keys()),
-                    help="Через запятую: %s" % ", ".join(engine.ART_TYPES.keys()))
-    ap.add_argument("--force", action="store_true", help="Перезаписать существующие арты")
-    ap.add_argument("--dry-run", action="store_true", help="Только показать план")
-    ap.add_argument("--clean", action="store_true", help="Удалить осиротевшие арты")
+                    help="Comma-separated: %s" % ", ".join(engine.ART_TYPES.keys()))
+    ap.add_argument("--force", action="store_true", help="Overwrite existing art")
+    ap.add_argument("--dry-run", action="store_true", help="Show the plan only")
+    ap.add_argument("--clean", action="store_true", help="Delete orphaned art")
     args = ap.parse_args()
 
     steam_path = engine.find_steam_path(args.steam_path)
     if not steam_path:
-        print("ОШИБКА: не нашёл Steam. Укажи путь флагом --steam-path.")
+        print("ERROR: Steam not found. Pass the path with --steam-path.")
         return 2
     print("Steam: %s" % steam_path)
 
@@ -113,30 +113,30 @@ def main():
     pattern = os.path.join(userdata, args.account if args.account else "*", "config", "shortcuts.vdf")
     vdf_files = glob.glob(pattern)
     if not vdf_files:
-        print("Не найдено shortcuts.vdf по пути %s" % pattern)
+        print("No shortcuts.vdf found at %s" % pattern)
         return 1
 
     if args.clean:
-        print("Режим очистки осиротевших артов%s" % ("  [DRY-RUN]" if args.dry_run else ""))
+        print("Cleaning orphaned art%s" % ("  [DRY-RUN]" if args.dry_run else ""))
         engine.clean_orphans(vdf_files, args.dry_run)
         return 0
 
     types = [t.strip() for t in args.types.split(",") if t.strip()]
     bad = [t for t in types if t not in engine.ART_TYPES]
     if bad:
-        print("Неизвестные типы артов: %s. Доступно: %s" % (", ".join(bad), ", ".join(engine.ART_TYPES)))
+        print("Unknown art types: %s. Available: %s" % (", ".join(bad), ", ".join(engine.ART_TYPES)))
         return 2
 
     api_key = engine.load_api_key(args.api_key)
     if not api_key:
-        print("ОШИБКА: нет API-ключа SteamGridDB.")
-        print("  Создай ключ на https://www.steamgriddb.com (Preferences -> API) и:")
-        print("  - положи его в файл steam_art.key рядом со скриптом, ИЛИ")
-        print("  - задай переменную окружения STEAMGRIDDB_API_KEY, ИЛИ")
-        print("  - передай флагом --api-key")
+        print("ERROR: no SteamGridDB API key.")
+        print("  Create a key at https://www.steamgriddb.com (Preferences -> API) and:")
+        print("  - put it in the steam_art.key file next to the script, OR")
+        print("  - set the STEAMGRIDDB_API_KEY environment variable, OR")
+        print("  - pass it with --api-key")
         return 2
 
-    print("Типы артов: %s%s%s" % (", ".join(types),
+    print("Art types: %s%s%s" % (", ".join(types),
                                   "  [FORCE]" if args.force else "",
                                   "  [DRY-RUN]" if args.dry_run else ""))
 
@@ -145,7 +145,7 @@ def main():
         uid = vdf.split(os.sep)[-3]
         grid_dir = os.path.join(os.path.dirname(vdf), "grid")
         games = engine.load_shortcuts(vdf)
-        print("\n=== Аккаунт %s: %d игр ===" % (uid, len(games)))
+        print("\n=== Account %s: %d games ===" % (uid, len(games)))
         if not games:
             continue
         if not args.dry_run:
@@ -154,16 +154,16 @@ def main():
             try:
                 process_game(game, grid_dir, types, api_key, args.force, args.dry_run, stats)
             except engine.SGDBAuthError as e:
-                print("\nКРИТИЧЕСКАЯ ОШИБКА API: %s" % e)
+                print("\nFATAL API ERROR: %s" % e)
                 return 1
 
-    print("\n--- Итог ---")
-    print("  Скачано:        %d" % stats["ok"])
-    print("  Пропущено(есть):%d" % stats["skip"])
-    print("  Не найдено:     %d" % stats["notfound"])
-    print("  Ошибки:         %d" % stats["fail"])
+    print("\n--- Summary ---")
+    print("  Downloaded:     %d" % stats["ok"])
+    print("  Skipped (have): %d" % stats["skip"])
+    print("  Not found:      %d" % stats["notfound"])
+    print("  Errors:         %d" % stats["fail"])
     if args.dry_run:
-        print("  Было бы скачано:%d" % stats["would"])
+        print("  Would download: %d" % stats["would"])
     return 0
 
 
@@ -171,5 +171,5 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     except KeyboardInterrupt:
-        print("\nПрервано пользователем.")
+        print("\nInterrupted by user.")
         sys.exit(130)

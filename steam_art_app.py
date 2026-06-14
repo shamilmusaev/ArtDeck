@@ -3,12 +3,11 @@
 """
 steam_art_app.py
 ================
-Современный интерфейс (стекло + неон) для steam_art в нативном окне (pywebview).
-Локальный HTTP-сервер на stdlib отдаёт фронтенд (web/) и JSON-API, бэкенд — движок
-steam_art.py.
+GUI for the steam engine in a native window (pywebview). A stdlib HTTP server
+serves the frontend (web/) and a JSON API; the backend calls the engine.
 
-Запуск:  run_app.bat   (или:  python steam_art_app.py)
-Зависимости: pywebview (нативное окно). Без него откроется в браузере.
+Run:  run_app.bat   (or:  python steam_art_app.py)
+Deps: pywebview (native window). Without it, opens in the browser.
 """
 
 import http.server
@@ -351,12 +350,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 url = data["url"]
                 _, grid = engine.account_paths(STEAM, uid)
                 dest = engine.apply_art(grid, appid, t, url)
-                # регистрируем в кэше нового клиента Steam (иначе анимация не играет)
+                # register in the newer Steam client's cache (else animation won't play)
                 try:
                     engine.register_custom_image(STEAM, uid, appid)
                 except Exception:
                     pass
-                # пост-проверка: битый файл / конкурент в слоте → предупреждаем UI
+                # post-check: corrupt file / competing file in the slot -> warn the UI
                 warn = None
                 try:
                     v = engine.verify_applied(grid, appid, t, dest)
@@ -426,7 +425,7 @@ def main():
                               min_size=(1024, 640), background_color="#0a0b10")
         webview.start()
     except Exception as e:
-        print("pywebview недоступен (%s), открываю в браузере…" % e)
+        print("pywebview unavailable (%s), opening in the browser..." % e)
         import webbrowser
         webbrowser.open(url)
         threading.Event().wait()
