@@ -42,6 +42,8 @@ function applyStatic(){
   $("#filter").placeholder = t("filter_games");
   $("#search").placeholder = t("search_sgdb");
   $("#lang-label").textContent = t("lang_name");
+  $("#btn-autofill").dataset.tip = t("tip_autofill");
+  $("#btn-clean").dataset.tip = t("tip_clean");
   document.documentElement.lang = LANG;
 }
 
@@ -60,7 +62,7 @@ async function init(){
   $("#btn-refresh").addEventListener("click", refreshGames);
   $("#btn-refresh").title = t("refresh");
   $("#btn-key").addEventListener("click", editKey);
-  $("#btn-lang").addEventListener("click", toggleLang);
+  $("#btn-lang").addEventListener("click", openLangPicker);
   $("#anim").addEventListener("change", e=>{ state.animated=e.target.checked; if(state.gameId) loadArts(); });
 
   // вкладки источника (Non-Steam / Установленные)
@@ -95,8 +97,13 @@ async function init(){
   }catch(e){ toast(t("error")+e.message,"bad"); }
 }
 
-function toggleLang(){
-  setLang(nextLang());
+const LANGS=[
+  {code:"ru", name:"Русский", sub:"Russian"},
+  {code:"en", name:"English", sub:"English"},
+];
+function applyLang(code){
+  if(code===LANG) return;
+  setLang(code);
   applyStatic();
   buildTabs();
   setKey(state.keyOk);
@@ -104,6 +111,19 @@ function toggleLang(){
   if(state.matchName) $("#match-sub").innerHTML = matchSubHtml();
   else if(state.selected) $("#match-sub").textContent = t("searching");
   if(!state.selected) $("#match-name").textContent = t("pick_game");
+}
+function openLangPicker(){
+  modal(t("lang_title"), `<div class="lang-list" id="lang-list"></div>`,
+    [{x:t("cancel"),cls:"ghost",fn:closeModal}]);
+  const box=$("#lang-list");
+  LANGS.forEach(l=>{
+    const row=el("button","lang-row"+(l.code===LANG?" sel":"")); row.type="button";
+    row.innerHTML=`<span class="lang-code">${l.code.toUpperCase()}</span>`
+      +`<span class="lang-meta"><b>${escapeHtml(l.name)}</b><small>${escapeHtml(l.sub)}</small></span>`
+      +(l.code===LANG?`<span class="lang-check">✓</span>`:"");
+    row.addEventListener("click", ()=>{ closeModal(); applyLang(l.code); });
+    box.appendChild(row);
+  });
 }
 
 /* ---------------- аккаунты ---------------- */
@@ -135,9 +155,21 @@ function closeAcctMenu(){ $("#acct-menu").classList.add("hidden"); $("#acct-btn"
 /* ---------------- список игр ---------------- */
 async function refreshGames(){
   const b=$("#btn-refresh"); if(b) b.classList.add("spin");
-  await loadGames();                       // /api/games читает файлы заново — это и есть скан
-  if(b) setTimeout(()=>b.classList.remove("spin"), 700);
+  await loadGames(2000);                    // держим скелет минимум 2с — иначе скан мелькает
+  if(b) b.classList.remove("spin");
   toast(t("refreshed"),"ok");
+}
+
+function renderGameSkeletons(){
+  const box=$("#games"); box.innerHTML="";
+  const banner=el("div","scan-banner");
+  banner.innerHTML=`<span class="scan-spin"></span><span>${escapeHtml(t("scanning"))}</span>`;
+  box.appendChild(banner);
+  for(let i=0;i<8;i++){
+    const row=el("div","game gskel"); row.style.animationDelay=(i*45)+"ms";
+    row.innerHTML=`<span class="sk sk-ic"></span><span class="sk sk-nm"></span><span class="sk sk-cov"></span>`;
+    box.appendChild(row);
+  }
 }
 
 async function loadGames(){
@@ -145,13 +177,14 @@ async function loadGames(){
   state.selected=null; state.gameId=null; state.matchName=null;
   $("#match-name").textContent=t("pick_game"); $("#match-sub").textContent="";
   $("#grid").innerHTML=""; $("#candidates").classList.add("hidden");
+  renderGameSkeletons();                      // скелет + «сканируем…» пока читаем библиотеку
   try{
     const d = await jget(`/api/games?account=${enc(state.account)}&source=${state.source}`);
     state.games = d.games||[];
     renderGames();
     const first=document.querySelector("#games .game");
     if(first) first.click();
-  }catch(e){ toast(t("games_err")+e.message,"bad"); }
+  }catch(e){ $("#games").innerHTML=""; toast(t("games_err")+e.message,"bad"); }
 }
 
 function renderGames(){

@@ -110,6 +110,19 @@ body{
 .ctl-div{width:1px; height:22px; flex:0 0 auto; margin:0 3px;
   background:linear-gradient(180deg,transparent,var(--line-2),transparent)}
 
+/* тултип-подсказка на ховере — объясняет, что делает кнопка */
+[data-tip]{position:relative}
+[data-tip]::after{
+  content:attr(data-tip); position:absolute; top:calc(100% + 9px); left:50%;
+  transform:translateX(-50%) translateY(-4px);
+  width:max-content; max-width:248px; white-space:normal; text-align:center;
+  padding:8px 11px; border-radius:10px; font-size:12px; font-weight:500; line-height:1.45;
+  color:var(--txt); background:rgba(18,20,28,.98); border:1px solid var(--line-2);
+  box-shadow:var(--shadow); opacity:0; pointer-events:none; z-index:60;
+  transition:opacity .14s ease, transform .14s ease;
+}
+[data-tip]:hover::after{opacity:1; transform:translateX(-50%) translateY(0); transition-delay:.3s}
+
 /* Кнопка API-ключа = статус + действие в одном. Зелёная точка = ключ есть;
    нет ключа → коралловая, пульсирует, прямо зовёт вставить ключ. */
 .keybtn{font-size:13px}
@@ -205,6 +218,20 @@ main{
 .refresh-btn:hover{color:var(--mint); background:var(--ink-3)}
 .refresh-btn svg{width:16px; height:16px}
 .refresh-btn.spin svg{animation:spin .7s linear}
+
+/* скелет списка игр во время сканирования (refresh / смена аккаунта/вкладки) */
+.scan-banner{display:flex; align-items:center; gap:9px; padding:6px 9px 10px;
+  color:var(--dim); font-size:12.5px; font-weight:600}
+.scan-spin{width:14px; height:14px; flex:0 0 auto; border-radius:50%;
+  border:2px solid var(--ink-3); border-top-color:var(--coral); animation:spin .7s linear infinite}
+.gskel{pointer-events:none; opacity:0; transform:translateY(6px); animation:rise .4s ease forwards}
+.gskel .sk{background:linear-gradient(100deg,var(--ink-2) 30%,rgba(255,255,255,.06) 50%,var(--ink-2) 70%);
+  background-size:200% 100%; animation:sh 1.2s linear infinite}
+.sk-ic{width:30px; height:30px; border-radius:8px; flex:0 0 auto}
+.sk-nm{height:11px; border-radius:5px; width:54%; margin-right:auto}
+.sk-cov{width:34px; height:12px; border-radius:3px; flex:0 0 auto}
+.gskel:nth-child(odd) .sk-nm{width:42%}
+.gskel:nth-child(3n) .sk-nm{width:62%}
 
 .game-list{flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:3px; padding-right:3px}
 .game{
@@ -485,6 +512,24 @@ main{
 .modal-body input[type=text]{width:100%; margin-top:10px; height:42px; padding:0 13px; border-radius:10px;
   background:var(--ink); border:1px solid var(--line-2); color:var(--txt); font-size:14px; outline:none}
 .modal-body input[type=text]:focus{border-color:var(--coral)}
+
+/* выбор языка интерфейса (модалка) */
+.lang-list{display:flex; flex-direction:column; gap:8px; margin-top:2px}
+.lang-row{display:flex; align-items:center; gap:12px; width:100%; padding:11px 12px;
+  border-radius:11px; cursor:pointer; text-align:left;
+  background:var(--ink); border:1px solid var(--line); transition:.14s ease}
+.lang-row:hover{border-color:var(--line-2); background:var(--ink-3)}
+.lang-row.sel{border-color:rgba(255,93,82,.5);
+  background:linear-gradient(135deg,rgba(255,93,82,.14),rgba(255,138,75,.05))}
+.lang-code{flex:0 0 auto; width:36px; height:28px; display:grid; place-items:center; border-radius:7px;
+  font-family:var(--mono); font-weight:600; font-size:12px; letter-spacing:.04em;
+  background:var(--ink-3); border:1px solid var(--line-2); color:var(--dim)}
+.lang-row.sel .lang-code{color:var(--coral); border-color:rgba(255,93,82,.5)}
+.lang-meta{display:flex; flex-direction:column; line-height:1.2; flex:1 1 auto}
+.lang-meta b{font-weight:600; font-size:14px; color:var(--txt)}
+.lang-meta small{font-size:11px; color:var(--faint)}
+.lang-check{flex:0 0 auto; color:var(--coral); font-weight:700; font-size:15px}
+
 /* инструкция и кнопка получения ключа в модалке */
 .key-steps{font-size:13.5px; color:var(--dim); line-height:1.7}
 .keyget{margin-top:12px; width:100%; justify-content:center; color:var(--mint); border-color:rgba(84,224,199,.4)}
