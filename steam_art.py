@@ -28,7 +28,6 @@ import glob
 import os
 import sys
 import time
-from urllib import parse
 
 import steam as engine
 
@@ -78,16 +77,12 @@ def process_game(game, grid_dir, types, api_key, force, dry_run, stats):
             print("      %-7s нет арта в базе" % t)
             stats["notfound"] += 1
             continue
-        ext = os.path.splitext(parse.urlparse(url).path)[1].lower() or ".png"
-        if ext not in engine.ART_EXTS:
-            ext = ".png"
-        dest = os.path.join(grid_dir, "%d%s%s" % (appid, cfg["suffix"], ext))
         if dry_run:
-            print("      %-7s DRY  -> %s" % (t, os.path.basename(dest)))
+            print("      %-7s DRY  -> appid %d, %s" % (t, appid, t))
             stats["would"] += 1
             continue
         try:
-            engine.download(url, dest)
+            dest = engine.apply_art(grid_dir, appid, t, url)
             print("      %-7s OK   -> %s" % (t, os.path.basename(dest)))
             stats["ok"] += 1
         except Exception as e:

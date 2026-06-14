@@ -5,6 +5,7 @@ import tempfile
 import threading
 import unittest
 import urllib.error
+import urllib.parse
 import urllib.request
 from unittest.mock import patch
 
@@ -21,6 +22,23 @@ def _get(srv, path):
     except UnicodeDecodeError:
         body = raw.decode("latin-1")
     return req.status, body
+
+
+def _status(srv, path):
+    try:
+        return _get(srv, path)[0]
+    except urllib.error.HTTPError as e:
+        return e.code
+
+
+def _post(srv, path, obj):
+    port = srv.server_address[1]
+    req = urllib.request.Request(
+        "http://127.0.0.1:%d%s" % (port, path),
+        data=json.dumps(obj).encode("utf-8"),
+        headers={"Content-Type": "application/json"})
+    r = urllib.request.urlopen(req, timeout=5)
+    return r.status, r.read().decode("utf-8")
 
 
 class ApiBase(unittest.TestCase):
@@ -140,6 +158,47 @@ class AutofillGuardTest(ApiBase):
             code, body = _get(srv, "/api/autofill?accounts=all")
         self.assertEqual(code, 200)
         self.assertIn('"type": "done"', body)
+
+
+class SecurityTest(ApiBase):
+    def test_static_traversal_blocked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            srv = self.start(tmp)
+            # Drive-absolute and dot-dot escapes must never serve files outside web/.
+            self.assertEqual(_status(srv, "/C:/Windows/win.ini"), 403)
+            self.assertEqual(_status(srv, "/A:/Apps/steam-art/steam_art.key"), 403)
+
+    def test_open_rejects_lookalike_hosts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            srv = self.start(tmp)
+            for url in ("https://www.steamgriddb.com.evil.com/x",
+                        "https://steamgriddb.com@evil.com/x",
+                        "http://www.steamgriddb.com/x"):
+                self.assertEqual(_status(srv, "/api/open?url=" + urllib.parse.quote(url, safe="")), 400)
+
+    def test_clean_only_deletes_real_orphans(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            make_account(tmp, "999", [{"appid": 2468090731, "AppName": "A", "Exe": "a.exe"}])
+            grid = os.path.join(tmp, "userdata", "999", "config", "grid")
+            os.makedirs(grid, exist_ok=True)
+            victim = os.path.join(grid, "keep.txt")
+            write_file(victim, "x")
+            srv = self.start(tmp)
+            _, body = _post(srv, "/api/clean",
+                            {"items": [{"account": "999", "file": "keep.txt"},
+                                       {"account": "999", "file": "../../../boom"}]})
+            self.assertEqual(json.loads(body)["removed"], 0)
+            self.assertTrue(os.path.isfile(victim))
+
+    def test_api_key_saves_and_loads_from_same_dir(self):
+        import steam.paths as paths
+        with tempfile.TemporaryDirectory() as tmp, \
+                patch.object(paths, "APP_DIR", tmp), \
+                patch.dict(os.environ):
+            os.environ.pop("STEAMGRIDDB_API_KEY", None)
+            app.engine.save_api_key("secret123")
+            self.assertTrue(os.path.isfile(os.path.join(tmp, "steam_art.key")))
+            self.assertEqual(app.engine.load_api_key(None), "secret123")
 
 
 if __name__ == "__main__":

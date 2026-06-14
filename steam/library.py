@@ -77,7 +77,7 @@ def load_installed(steam_path):
                 continue
             try:
                 appid = int(st.get("appid") or 0)
-            except ValueError:
+            except (ValueError, TypeError):
                 continue
             name = st.get("name") or ""
             if not appid or not name or appid in seen or _is_tool(appid, name):

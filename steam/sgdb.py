@@ -30,7 +30,11 @@ def api_get(path, api_key, params=None, retries=3):
     for attempt in range(retries):
         try:
             with request.urlopen(req, timeout=30) as resp:
-                return json.loads(resp.read().decode("utf-8"))
+                raw = resp.read()
+            try:
+                return json.loads(raw.decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                raise SGDBError("invalid response from SteamGridDB for %s" % path)
         except error.HTTPError as e:
             if e.code in (401, 403):
                 raise SGDBAuthError("API-ключ отклонён (HTTP %d). Проверь steam_art.key / STEAMGRIDDB_API_KEY." % e.code)

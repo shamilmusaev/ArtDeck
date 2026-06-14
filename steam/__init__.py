@@ -2,7 +2,7 @@
 """Пакет steam: движок дозаливки артов. `import steam as engine` даёт тот же
 публичный интерфейс, что и прежний модуль steam_art."""
 from steam.paths import (
-    APP_DIR, DEFAULT_STEAM_PATHS, find_steam_path, load_api_key,
+    APP_DIR, DEFAULT_STEAM_PATHS, find_steam_path, load_api_key, save_api_key,
     list_accounts, account_paths,
 )
 from steam.vdf import parse_binary_vdf, get_ci
@@ -29,7 +29,7 @@ from steam.verify import verify_applied, valid_image
 from steam.official import official_art
 
 __all__ = [
-    "APP_DIR", "DEFAULT_STEAM_PATHS", "find_steam_path", "load_api_key",
+    "APP_DIR", "DEFAULT_STEAM_PATHS", "find_steam_path", "load_api_key", "save_api_key",
     "list_accounts", "account_paths", "parse_binary_vdf", "get_ci",
     "API_BASE", "SGDBError", "SGDBAuthError", "api_get", "clean_name",
     "search_game_id", "search_games", "list_arts_raw", "download",

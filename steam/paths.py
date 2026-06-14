@@ -25,11 +25,19 @@ def load_api_key(cli_key):
     env = os.environ.get("STEAMGRIDDB_API_KEY")
     if env:
         return env.strip()
-    key_file = os.path.join(APP_DIR, "steam_art.key")  # APP_DIR = корень проекта, рядом со steam_art.py
+    key_file = os.path.join(APP_DIR, "steam_art.key")
     if os.path.isfile(key_file):
         with open(key_file, "r", encoding="utf-8-sig") as f:
             return f.read().strip()
     return None
+
+
+def save_api_key(key):
+    """Persist the SteamGridDB key to APP_DIR — the same place load_api_key reads.
+    Writing elsewhere (e.g. the script dir, which is a temp dir in a frozen build)
+    means the key silently fails to persist."""
+    with open(os.path.join(APP_DIR, "steam_art.key"), "w", encoding="utf-8") as f:
+        f.write((key or "").strip())
 
 
 def find_steam_path(cli_path):
@@ -63,7 +71,9 @@ def list_accounts(steam_path):
     userdata = os.path.join(steam_path, "userdata")
     out = []
     for vdf in sorted(glob.glob(os.path.join(userdata, "*", "config", "shortcuts.vdf"))):
-        out.append(vdf.split(os.sep)[-3])
+        uid = os.path.basename(os.path.dirname(os.path.dirname(vdf)))
+        if uid.isdigit():  # skip stray non-account folders (int(uid) is used downstream)
+            out.append(uid)
     return out
 
 

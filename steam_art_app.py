@@ -82,11 +82,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self._serve_gameicon(q)
             if path.startswith("/api/"):
                 return self._api_get(path, q)
-            # статика из web/
-            rel = os.path.normpath(path.lstrip("/")).replace("\\", "/")
-            if rel.startswith(".."):
+            # Static files from web/. Resolve the request against WEBDIR and require
+            # the result to stay inside it — a bare lstrip lets a Windows drive-letter
+            # or backslash path (/C:/.., /\..\..) escape and read arbitrary files.
+            full = os.path.normpath(os.path.join(WEBDIR, path.lstrip("/")))
+            root = os.path.normpath(WEBDIR)
+            try:
+                inside = os.path.commonpath((full, root)) == root
+            except ValueError:
+                inside = False
+            if not inside:
                 return self._err("forbidden", 403)
-            full = os.path.join(WEBDIR, rel)
             if os.path.isfile(full):
                 return self._send_file(full, cache=False)
             return self._err("not found", 404)
@@ -159,7 +165,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._autofill_sse(q, key)
         if path == "/api/open":
             u2 = q.get("url", [""])[0]
-            if u2.startswith(("https://www.steamgriddb.com", "https://steamgriddb.com")):
+            # Match the host exactly — a startswith check accepts
+            # steamgriddb.com.evil.com and steamgriddb.com@evil.com.
+            host = urllib.parse.urlparse(u2).hostname or ""
+            if u2.startswith("https://") and host in ("steamgriddb.com", "www.steamgriddb.com"):
                 import webbrowser
                 webbrowser.open(u2)
                 return self._json({"ok": True})
@@ -188,14 +197,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def _serve_current(self, q):
         uid = q.get("account", [None])[0]
-        appid = q.get("appid", [None])[0]
         t = q.get("type", ["cover"])[0]
-        if not (uid and appid and STEAM):
+        try:
+            appid = int(q.get("appid", [None])[0])
+        except (TypeError, ValueError):
+            return self._err("bad id", 400)
+        if not (uid and STEAM) or t not in engine.ART_TYPES:
             return self._err("bad", 400)
         _, grid = engine.account_paths(STEAM, uid)
-        p = engine.existing_art(grid, int(appid), engine.ART_TYPES[t]["suffix"])
+        p = engine.existing_art(grid, appid, engine.ART_TYPES[t]["suffix"])
         if not p or not os.path.isfile(p):
-            p = engine.official_art(STEAM, int(appid), t)  # официальный арт Steam (установленные игры)
+            p = engine.official_art(STEAM, appid, t)  # fall back to Steam's own art (installed games)
         if not p or not os.path.isfile(p):
             return self._err("none", 404)
         self._send_file(p, cache=False)
@@ -235,7 +247,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not key:
             return self._err("no-key", 400)
         acc = q.get("accounts", ["all"])[0]
-        accts = (engine.list_accounts(STEAM) if STEAM else []) if acc == "all" else [acc]
+        if not STEAM:
+            accts = []
+        elif acc == "all":
+            accts = engine.list_accounts(STEAM)
+        else:
+            accts = [acc]
 
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
@@ -292,6 +309,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         ok += 1
                     else:
                         skip += 1
+                except engine.SGDBAuthError as e:
+                    send({"type": "error", "message": str(e)})
+                    return
                 except engine.SGDBError:
                     fail += 1
         send({"type": "done", "ok": ok, "fail": fail, "skip": skip})
@@ -330,21 +350,28 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 removed = engine.revert_art(grid, appid, t)
                 return self._json({"ok": True, "removed": removed})
             if u.path == "/api/clean":
+                # Recompute the real orphan set per account and only delete files in
+                # it — never os.remove a client-supplied path (traversal / arbitrary
+                # delete, and find_orphans enforces the non-Steam appid guard).
                 removed = 0
+                allow = {}
                 for it in data.get("items", []):
-                    _, grid = engine.account_paths(STEAM, it["account"])
-                    p = os.path.join(grid, it["file"])
-                    if os.path.isfile(p):
-                        try:
-                            os.remove(p)
-                            removed += 1
-                        except OSError:
-                            pass
+                    acc = it.get("account")
+                    if acc not in allow:
+                        vdf, _ = engine.account_paths(STEAM, acc) if STEAM else (None, None)
+                        allow[acc] = engine.find_orphans(vdf) if vdf else (None, [])
+                    grid, orphans = allow[acc]
+                    if not grid or it.get("file") not in orphans:
+                        continue
+                    try:
+                        os.remove(os.path.join(grid, it["file"]))
+                        removed += 1
+                    except OSError:
+                        pass
                 return self._json({"removed": removed})
             if u.path == "/api/key":
                 val = (data.get("key") or "").strip()
-                with open(os.path.join(SCRIPTDIR, "steam_art.key"), "w", encoding="utf-8") as f:
-                    f.write(val)
+                engine.save_api_key(val)
                 return self._json({"ok": True, "key_ok": bool(val), "key": val})
             return self._err("unknown", 404)
         except Exception as e:
