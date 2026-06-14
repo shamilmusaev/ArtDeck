@@ -178,7 +178,7 @@ main{
      сайдбар/поиск (он остаётся одинаково тёмным на всех вкладках). */
   background:linear-gradient(180deg,#0d0f15,#0b0c12);
 }
-.src-tabs{position:relative; display:grid; grid-template-columns:1fr 1fr; gap:0;
+.src-tabs{position:relative; flex:0 0 auto; display:grid; grid-template-columns:1fr 1fr; gap:0;
   background:var(--ink-2); border:1px solid var(--line); border-radius:11px; padding:4px}
 .src-tab{
   position:relative; z-index:2; height:32px; border:none; background:transparent; cursor:pointer;
@@ -193,7 +193,7 @@ main{
 }
 .src-tabs[data-src="installed"] .src-ink{transform:translateX(100%)}
 
-.filter{display:flex; align-items:center; gap:9px; padding:0 12px; height:42px;
+.filter{flex:0 0 auto; display:flex; align-items:center; gap:9px; padding:0 12px; height:42px;
   background:var(--ink-2); border:1px solid var(--line); border-radius:11px}
 .filter:focus-within{border-color:var(--line-2)}
 .filter .ic{width:16px; height:16px; color:var(--faint); flex:0 0 auto}
