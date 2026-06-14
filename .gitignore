@@ -1,4 +1,4 @@
-# Секрет — личный API-ключ SteamGridDB, в репозиторий не попадает
+# Secret — personal SteamGridDB API key, never committed
 steam_art.key
 
 # Python
@@ -6,18 +6,22 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Временные файлы
+# Temp files
 *.tmp
 
-# Артефакты сборки PyInstaller
+# PyInstaller build artifacts
 build/
 dist/
 *.spec
 
-# Виртуальные окружения
+# Virtual environments
 .venv/
 venv/
 
 # IDE
 .vscode/
 .idea/
+
+# Internal dev tooling / planning notes — not part of the shipped project
+.claude/
+docs/superpowers/
