@@ -20,6 +20,28 @@
   </div>
 
   <div class="controls">
+    <button id="btn-autofill" class="btn primary">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>
+      <span data-i18n="autofill"></span>
+    </button>
+    <button id="btn-clean" class="btn ghost">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      <span data-i18n="clean"></span>
+    </button>
+
+    <span class="ctl-div"></span>
+
+    <button id="btn-key" class="btn keybtn">
+      <span class="key-dot"></span>
+      <span id="key-label"></span>
+    </button>
+    <button id="btn-lang" class="btn ghost lang">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+      <span id="lang-label"></span>
+    </button>
+
+    <span class="ctl-div"></span>
+
     <div id="acct" class="acct">
       <button id="acct-btn" class="acct-btn" aria-haspopup="listbox" aria-expanded="false">
         <span id="acct-av" class="acct-av"></span>
@@ -31,19 +53,6 @@
       </button>
       <div id="acct-menu" class="acct-menu hidden" role="listbox"></div>
     </div>
-
-    <button id="btn-autofill" class="btn primary">
-      <span data-i18n="autofill"></span>
-    </button>
-    <button id="btn-clean" class="btn ghost">
-      <span data-i18n="clean"></span>
-    </button>
-
-    <button id="btn-key" class="btn keybtn">
-      <span class="key-dot"></span>
-      <span id="key-label"></span>
-    </button>
-    <button id="btn-lang" class="btn ghost lang">RU</button>
   </div>
 </header>
 
@@ -57,6 +66,9 @@
     <div class="filter">
       <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
       <input id="filter" type="text" autocomplete="off">
+      <button id="btn-refresh" class="refresh-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/></svg>
+      </button>
     </div>
     <div id="games" class="game-list"></div>
   </aside>

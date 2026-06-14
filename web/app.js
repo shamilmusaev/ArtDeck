@@ -57,6 +57,8 @@ async function init(){
   document.addEventListener("keydown", e=>{ if(e.key==="Escape") candOpen(false); });
   $("#btn-autofill").addEventListener("click", autofill);
   $("#btn-clean").addEventListener("click", openClean);
+  $("#btn-refresh").addEventListener("click", refreshGames);
+  $("#btn-refresh").title = t("refresh");
   $("#btn-key").addEventListener("click", editKey);
   $("#btn-lang").addEventListener("click", toggleLang);
   $("#anim").addEventListener("change", e=>{ state.animated=e.target.checked; if(state.gameId) loadArts(); });
@@ -131,6 +133,13 @@ function toggleAcctMenu(){ const m=$("#acct-menu"); const open=m.classList.toggl
 function closeAcctMenu(){ $("#acct-menu").classList.add("hidden"); $("#acct-btn").setAttribute("aria-expanded","false"); }
 
 /* ---------------- список игр ---------------- */
+async function refreshGames(){
+  const b=$("#btn-refresh"); if(b) b.classList.add("spin");
+  await loadGames();                       // /api/games читает файлы заново — это и есть скан
+  if(b) setTimeout(()=>b.classList.remove("spin"), 700);
+  toast(t("refreshed"),"ok");
+}
+
 async function loadGames(){
   if(!state.account) return;
   state.selected=null; state.gameId=null; state.matchName=null;

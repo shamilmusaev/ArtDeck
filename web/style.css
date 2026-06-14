@@ -174,7 +174,9 @@ main{
   min-height:0; display:flex; flex-direction:column;
   padding:16px 14px; gap:14px;
   border-right:1px solid var(--line);
-  background:linear-gradient(180deg,rgba(13,15,21,.6),transparent 40%);
+  /* плотный тёмный фон: амбиент выбранной игры не должен просвечивать и осветлять
+     сайдбар/поиск (он остаётся одинаково тёмным на всех вкладках). */
+  background:linear-gradient(180deg,#0d0f15,#0b0c12);
 }
 .src-tabs{position:relative; display:grid; grid-template-columns:1fr 1fr; gap:0;
   background:var(--ink-2); border:1px solid var(--line); border-radius:11px; padding:4px}
@@ -197,6 +199,12 @@ main{
 .filter .ic{width:16px; height:16px; color:var(--faint); flex:0 0 auto}
 .filter input{flex:1; min-width:0; background:none; border:none; outline:none; color:var(--txt); font-family:var(--ui); font-size:13.5px}
 .filter input::placeholder{color:var(--faint)}
+/* кнопка пере-сканирования списка игр */
+.refresh-btn{flex:0 0 auto; display:grid; place-items:center; width:28px; height:28px;
+  border-radius:8px; background:transparent; border:none; color:var(--faint); cursor:pointer; transition:.15s}
+.refresh-btn:hover{color:var(--mint); background:var(--ink-3)}
+.refresh-btn svg{width:16px; height:16px}
+.refresh-btn.spin svg{animation:spin .7s linear}
 
 .game-list{flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:3px; padding-right:3px}
 .game{
