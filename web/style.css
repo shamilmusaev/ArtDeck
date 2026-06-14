@@ -110,6 +110,39 @@ body{
 .ctl-div{width:1px; height:22px; flex:0 0 auto; margin:0 3px;
   background:linear-gradient(180deg,transparent,var(--line-2),transparent)}
 
+/* ⚙ настройки: API-ключ + язык спрятаны в одно меню, чтобы не шуметь в баре */
+.settings{position:relative}
+.btn.gear{padding:0; width:38px; justify-content:center; position:relative; color:var(--dim)}
+.btn.gear:hover{color:var(--txt)}
+.btn.gear[aria-expanded="true"]{color:var(--txt); background:var(--ink-3); border-color:var(--line-2)}
+.gear-dot{position:absolute; top:6px; right:6px; width:7px; height:7px; border-radius:50%;
+  background:var(--coral); box-shadow:0 0 0 2px var(--ink-1);
+  opacity:0; transform:scale(.4); transition:.16s ease}
+.gear-dot.on{opacity:1; transform:none; animation:covpulse 1.8s ease-in-out infinite}
+.settings-menu{
+  position:absolute; top:calc(100% + 8px); right:0; z-index:40;
+  min-width:236px; padding:6px; border-radius:14px;
+  background:rgba(18,20,28,.97); backdrop-filter:blur(16px);
+  border:1px solid var(--line-2); box-shadow:var(--shadow); animation:pop .14s ease;
+}
+.set-row{display:flex; align-items:center; gap:11px; width:100%; padding:9px 10px;
+  border-radius:10px; cursor:pointer; text-align:left; background:none; border:none;
+  color:var(--txt); transition:.14s ease}
+.set-row:hover{background:var(--ink-3)}
+.set-ic{width:18px; height:18px; flex:0 0 auto; color:var(--dim)}
+.set-meta{display:flex; flex-direction:column; line-height:1.25; flex:1 1 auto; min-width:0}
+.set-meta b{font-weight:600; font-size:13.5px; color:var(--txt)}
+.set-meta small{font-size:11px; color:var(--faint)}
+.set-dot{width:8px; height:8px; border-radius:50%; flex:0 0 auto; background:var(--faint)}
+.set-dot.ok{background:var(--mint); box-shadow:0 0 0 3px var(--mint-dim)}
+.set-dot.bad{background:var(--coral)}
+.set-row.bad .set-ic,.set-row.bad .set-meta small{color:var(--coral)}
+
+/* один аккаунт → статичный чип без дропдауна */
+.acct.solo .chev{display:none}
+.acct.solo .acct-btn{cursor:default}
+.acct.solo .acct-btn:hover{border-color:var(--line)}
+
 /* тултип-подсказка на ховере — объясняет, что делает кнопка */
 [data-tip]{position:relative}
 [data-tip]::after{
@@ -274,12 +307,14 @@ main{
   border:1px solid var(--line);
 }
 .match-info{min-width:0}
-.match-name{font-family:var(--display); font-weight:700; font-size:19px; letter-spacing:-.01em;
+/* заголовок продублирован в сайдбаре и на карточках — держим компактным,
+   полезную нагрузку несёт строка статус-чипов ниже. */
+.match-name{font-family:var(--display); font-weight:700; font-size:16px; letter-spacing:-.01em;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.match-sub{font-size:12.5px; color:var(--dim); margin-top:6px;
+.match-sub{font-size:12.5px; color:var(--dim); margin-top:7px;
   display:flex; flex-wrap:wrap; align-items:center; gap:6px}
 .match-sub b{color:var(--txt); font-weight:600}
-/* совпадение SteamGridDB — компактными бейджами вместо строки текста */
+/* статус-чипы: статус обложки, покрытие, варианты, совпадение SteamGridDB */
 .mbadge{display:inline-flex; align-items:center; height:23px; padding:0 9px; border-radius:7px;
   font-size:11.5px; font-weight:600; line-height:1; white-space:nowrap;
   background:var(--ink-3); border:1px solid var(--line); color:var(--dim)}
@@ -287,6 +322,11 @@ main{
 .mbadge.name{max-width:340px; overflow:hidden; text-overflow:ellipsis; display:inline-block;
   line-height:21px; color:var(--txt); background:var(--ink-3); border-color:var(--line-2)}
 .mbadge.id{font-family:var(--mono); font-size:10.5px; font-weight:500; color:var(--faint)}
+/* заглавный чип статуса обложки: точка-индикатор в текущем цвете */
+.mbadge.ms::before{content:""; width:6px; height:6px; border-radius:50%;
+  background:currentColor; margin-right:7px; flex:0 0 auto}
+.mbadge.ok{color:var(--mint); background:rgba(84,224,199,.10); border-color:rgba(84,224,199,.38)}
+.mbadge.warn{color:#ffd7d2; background:rgba(255,93,82,.12); border-color:rgba(255,93,82,.5)}
 .match-search{position:relative; display:flex; align-items:center; gap:8px; width:min(40%,360px);
   padding:0 12px; height:40px; background:var(--ink); border:1px solid var(--line); border-radius:11px}
 .match-search:focus-within{border-color:var(--line-2)}

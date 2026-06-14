@@ -27,6 +27,7 @@ const state = {
   games:[], selected:null, gameId:null, matchName:null,
   type:"cover", animated:false, candidates:[], selectedArt:null,
   reqToken:0, keyOk:false, key:"",
+  matchState:"", matchError:"", variants:null,
 };
 
 const $  = s=>document.querySelector(s);
@@ -41,7 +42,7 @@ function applyStatic(){
   document.querySelectorAll("[data-i18n]").forEach(e=>{ e.textContent = t(e.dataset.i18n); });
   $("#filter").placeholder = t("filter_games");
   $("#search").placeholder = t("search_sgdb");
-  $("#lang-label").textContent = t("lang_name");
+  $("#set-lang-cur").textContent = t("lang_name");
   $("#btn-autofill").dataset.tip = t("tip_autofill");
   $("#btn-clean").dataset.tip = t("tip_clean");
   document.documentElement.lang = LANG;
@@ -62,7 +63,10 @@ async function init(){
   $("#btn-refresh").addEventListener("click", refreshGames);
   $("#btn-refresh").title = t("refresh");
   $("#btn-key").addEventListener("click", editKey);
-  $("#btn-lang").addEventListener("click", openLangPicker);
+  $("#btn-settings").addEventListener("click", e=>{ e.stopPropagation(); toggleSettings(); });
+  $("#set-key").addEventListener("click", ()=>{ closeSettings(); editKey(); });
+  $("#set-lang").addEventListener("click", ()=>{ closeSettings(); openLangPicker(); });
+  document.addEventListener("click", e=>{ if(!$("#settings").contains(e.target)) closeSettings(); });
   $("#anim").addEventListener("change", e=>{ state.animated=e.target.checked; if(state.gameId) loadArts(); });
 
   // вкладки источника (Non-Steam / Установленные)
@@ -74,7 +78,8 @@ async function init(){
       state.source = tab.dataset.src;
       $("#src-tabs").dataset.src = state.source;
       $("#filter").value="";   // одинаковый старт вкладок: сбрасываем фильтр
-      loadGames();
+      // даём слайдеру вкладки отрисовать переход до тяжёлой перерисовки списка
+      requestAnimationFrame(()=>requestAnimationFrame(()=>loadGames()));
     });
   });
 
@@ -92,6 +97,7 @@ async function init(){
     setKey(st.key_ok);
     if(!st.steam_path){ toast(t("steam_not_found"),"bad"); return; }
     state.accounts = st.accounts || [];
+    $("#acct").classList.toggle("solo", state.accounts.length<=1);  // один аккаунт → без дропдауна
     renderAcctMenu();
     if(state.accounts.length){ selectAccount(state.accounts[0].uid); }
     if(!st.key_ok) toast(t("no_key_hint"),"bad");
@@ -109,9 +115,8 @@ function applyLang(code){
   buildTabs();
   setKey(state.keyOk);
   renderAcctMenu();
-  if(state.matchName) $("#match-sub").innerHTML = matchSubHtml();
-  else if(state.selected) $("#match-sub").textContent = t("searching");
-  if(!state.selected) $("#match-name").textContent = t("pick_game");
+  if(state.selected) renderMatchSub();
+  else $("#match-name").textContent = t("pick_game");
 }
 function openLangPicker(){
   modal(t("lang_title"), `<div class="lang-list" id="lang-list"></div>`,
@@ -150,7 +155,7 @@ function selectAccount(uid){
   renderAcctMenu();
   loadGames();
 }
-function toggleAcctMenu(){ const m=$("#acct-menu"); const open=m.classList.toggle("hidden"); $("#acct-btn").setAttribute("aria-expanded", String(!open)); }
+function toggleAcctMenu(){ if($("#acct").classList.contains("solo")) return; const m=$("#acct-menu"); const open=m.classList.toggle("hidden"); $("#acct-btn").setAttribute("aria-expanded", String(!open)); }
 function closeAcctMenu(){ $("#acct-menu").classList.add("hidden"); $("#acct-btn").setAttribute("aria-expanded","false"); }
 
 /* ---------------- список игр ---------------- */
@@ -178,17 +183,22 @@ async function loadGames(minMs=0){
   state.selected=null; state.gameId=null; state.matchName=null;
   $("#match-name").textContent=t("pick_game"); $("#match-sub").textContent="";
   $("#grid").innerHTML=""; $("#candidates").classList.add("hidden");
-  renderGameSkeletons();                      // скелет + «сканируем…» пока читаем библиотеку
+  // refresh — показываем скелет сразу; быстрый свитч — только если загрузка дольше 160мс
+  // (иначе скелет мелькает на миг при мгновенном чтении локальных файлов).
+  let shown=false;
+  const showSkel=()=>{ shown=true; renderGameSkeletons(); };
+  const skelTimer = minMs>0 ? (showSkel(),null) : setTimeout(showSkel,160);
   const t0=Date.now();
   try{
     const d = await jget(`/api/games?account=${enc(state.account)}&source=${state.source}`);
     state.games = d.games||[];
-    const wait=minMs-(Date.now()-t0);         // показываем скелет не короче minMs (refresh = 2с)
-    if(wait>0) await new Promise(r=>setTimeout(r,wait));
+    if(skelTimer) clearTimeout(skelTimer);
+    const wait=minMs-(Date.now()-t0);         // у refresh скелет держим не короче minMs (2с)
+    if(wait>0){ if(!shown) showSkel(); await new Promise(r=>setTimeout(r,wait)); }
     renderGames();
     const first=document.querySelector("#games .game");
     if(first) first.click();
-  }catch(e){ $("#games").innerHTML=""; toast(t("games_err")+e.message,"bad"); }
+  }catch(e){ if(skelTimer) clearTimeout(skelTimer); $("#games").innerHTML=""; toast(t("games_err")+e.message,"bad"); }
 }
 
 function renderGames(){
@@ -224,31 +234,58 @@ function renderGames(){
 }
 
 async function selectGame(g,row){
-  state.selected=g; state.gameId=null; state.matchName=null;
+  state.selected=g; state.gameId=null; state.matchName=null; state.variants=null;
   document.querySelectorAll(".game.active").forEach(r=>r.classList.remove("active"));
   if(row) row.classList.add("active");
   ambientFromImage(`/api/gameicon?account=${enc(state.account)}&appid=${g.appid}`);
   $("#match-name").textContent=g.name;
   $("#candidates").classList.add("hidden");
   $("#empty").classList.add("hidden");
-  if(!state.keyOk){ $("#match-sub").textContent=t("need_key_sub"); showNeedKey(); return; }
-  $("#match-sub").textContent=t("searching");
+  if(!state.keyOk){ state.matchState="nokey"; renderMatchSub(); showNeedKey(); return; }
+  state.matchState="searching"; renderMatchSub();
   renderSkeletons();
   try{
     const d=await jget("/api/search?q="+enc(g.name));
     state.candidates=d.results||[];
     fillCandidates();
     if(state.candidates.length){ const m=state.candidates[0]; setGame(m.id,m.name); }
-    else $("#match-sub").textContent=t("not_found_manual");
-  }catch(e){ $("#match-sub").textContent=t("search_error")+e.message; }
+    else { state.matchState="notfound"; renderMatchSub(); }
+  }catch(e){ state.matchState="error"; state.matchError=e.message; renderMatchSub(); }
 }
 
-function matchSubHtml(){
-  return `<span class="mbadge src">SteamGridDB</span>`
-    + `<span class="mbadge name" title="${escapeHtml(state.matchName)}">${escapeHtml(state.matchName)}</span>`
-    + `<span class="mbadge id">id ${escapeHtml(String(state.gameId))}</span>`;
+/* Под-строка match-бара: полезные статус-чипы из данных самой игры (статус
+   обложки + покрытие) — заполняются сразу, не дожидаясь SteamGridDB; плюс
+   состояние поиска/числа вариантов и компактное совпадение GridDB. */
+function mchip(cls, text, title){
+  return `<span class="mbadge${cls?" "+cls:""}"${title?` title="${escapeHtml(title)}"`:""}>${escapeHtml(text)}</span>`;
 }
-function setGame(id,name){ state.gameId=id; state.matchName=name; $("#match-sub").innerHTML=matchSubHtml(); updateCandLabel(); loadArts(); }
+function renderMatchSub(){
+  const g=state.selected, sub=$("#match-sub");
+  if(!g){ sub.textContent=""; return; }
+  const has=ty=>!!((g.status&&g.status[ty])||(g.official&&g.official[ty]));
+  // 1) статус обложки — главный факт (своя / Steam / нет)
+  let html;
+  if(g.status&&g.status.cover) html=mchip("ms ok", t("ms_cover_custom"));
+  else if(has("cover")) html=mchip("ms", t("ms_cover_steam"));
+  else html=mchip("ms warn", t("ms_cover_none"));
+  // 2) покрытие N/5
+  const have=STATUS_ORDER.filter(has).length;
+  html+=mchip(have===5?"ok":"", t("cov_count", have));
+  // 3) состояние SteamGridDB / число вариантов активного типа
+  if(state.matchState==="nokey")        html+=mchip("warn", t("need_key_sub"));
+  else if(state.matchState==="searching") html+=mchip("", "SteamGridDB · "+t("ms_searching"));
+  else if(state.matchState==="notfound")  html+=mchip("warn", t("not_found_manual"));
+  else if(state.matchState==="error")     html+=mchip("warn", t("search_error")+(state.matchError||""));
+  else if(state.matchState==="matched"){
+    html+=(state.variants==null) ? mchip("", "…") : mchip("", t("ms_variants", state.variants));
+    html+=mchip("name", "SteamGridDB · "+state.matchName, state.matchName+" · id "+state.gameId);
+  }
+  sub.innerHTML=html;
+}
+function setGame(id,name){
+  state.gameId=id; state.matchName=name; state.matchState="matched"; state.variants=null;
+  renderMatchSub(); updateCandLabel(); loadArts();
+}
 
 /* ---------------- ручной поиск ---------------- */
 async function doSearch(){
@@ -332,11 +369,13 @@ async function loadArts(){
   const sig=tp+"|"+state.animated;
   if(grid.dataset.skel!==sig || !grid.querySelector(".skeleton")) renderSkeletons();
   $("#anim-wrap").style.display = tp==="icon" ? "none" : "";
+  state.variants=null; renderMatchSub();   // «…» в чипе вариантов на время загрузки
   try{
     const d=await jget(`/api/arts?game_id=${state.gameId}&type=${tp}&animated=${state.animated?1:0}`);
     if(token!==state.reqToken) return;
     grid.querySelectorAll(".skeleton").forEach(s=>s.remove());
     const arts=d.arts||[];
+    state.variants=arts.length; renderMatchSub();
     if(!arts.length){ grid.appendChild(el("div","empty",t("no_variants"))); return; }
     arts.forEach((a,i)=>grid.appendChild(artCard(a,cfg,i)));
   }catch(e){
@@ -532,10 +571,18 @@ async function openClean(){
 /* ---------------- ключ ---------------- */
 function setKey(ok){
   state.keyOk=ok;
+  // меню настроек (статус ключа есть всегда)
+  const st=$("#set-key-status"); if(st) st.textContent = ok ? "OK" : t("key_need");
+  const sk=$("#set-key"); if(sk) sk.classList.toggle("bad", !ok);
+  const dot=$("#set-key-dot"); if(dot){ dot.classList.toggle("ok",ok); dot.classList.toggle("bad",!ok); }
+  // явная кнопка-CTA в баре (старое место) — только когда ключа нет; иначе ключ живёт в ⚙
   const b=$("#btn-key");
-  b.classList.remove("ok","bad"); b.classList.add(ok?"ok":"bad");
-  $("#key-label").textContent = ok ? t("key_ok") : t("key_need");
+  if(b){ b.classList.toggle("hidden", ok); const lbl=$("#key-label"); if(lbl) lbl.textContent = t("key_need"); }
+  // точку на ⚙ не дублируем, пока висит явная кнопка
+  const gd=$("#gear-dot"); if(gd) gd.classList.toggle("on", false);
 }
+function toggleSettings(){ const m=$("#settings-menu"); const open=m.classList.toggle("hidden"); $("#btn-settings").setAttribute("aria-expanded", String(!open)); }
+function closeSettings(){ const m=$("#settings-menu"); if(m) m.classList.add("hidden"); $("#btn-settings").setAttribute("aria-expanded","false"); }
 const SGDB_KEY_URL = "https://www.steamgriddb.com/profile/preferences/api";
 function openExternal(url){ fetch("/api/open?url="+enc(url)).catch(()=>{}); }
 
