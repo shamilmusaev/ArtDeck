@@ -15,7 +15,7 @@ Not affiliated with Valve or SteamGridDB.
 Usage:
     python artdeck_cli.py                  # all accounts, all missing art
     python artdeck_cli.py --dry-run        # show the plan, download nothing
-    python artdeck_cli.py --account 11111111
+    python artdeck_cli.py --account <uid>
     python artdeck_cli.py --types cover    # covers only
     python artdeck_cli.py --force          # overwrite existing art
     python artdeck_cli.py --clean          # delete orphaned art

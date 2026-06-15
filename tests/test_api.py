@@ -56,7 +56,7 @@ class StateGamesTest(ApiBase):
         with tempfile.TemporaryDirectory() as tmp:
             make_account(tmp, "11111111",
                          [{"appid": 2468090731, "AppName": "Alien", "Exe": "a.exe"}],
-                         persona="Sam")
+                         persona="Player")
             srv = self.start(tmp)
             with patch.object(app.engine, "load_api_key", lambda *_: "k"):
                 code, body = _get(srv, "/api/state")
@@ -65,7 +65,7 @@ class StateGamesTest(ApiBase):
             self.assertTrue(d["key_ok"])
             accts = d["accounts"]
             self.assertEqual(accts[0]["uid"], "11111111")
-            self.assertEqual(accts[0]["name"], "Sam")
+            self.assertEqual(accts[0]["name"], "Player")
             self.assertIn("has_avatar", accts[0])
 
     def test_games_shortcut_source_default(self):

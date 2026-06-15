@@ -15,14 +15,14 @@ class UsersTest(unittest.TestCase):
     def _steam_with_users(self, tmp):
         write_file(os.path.join(tmp, "config", "loginusers.vdf"),
                    '"users"\n{\n  "76561197971376839"\n  {\n'
-                   '    "AccountName" "acc"\n    "PersonaName" "Sam"\n  }\n}\n')
+                   '    "AccountName" "acc"\n    "PersonaName" "Player"\n  }\n}\n')
 
     def test_load_and_name(self):
         with tempfile.TemporaryDirectory() as tmp:
             self._steam_with_users(tmp)
             users = load_users(tmp)
-            self.assertEqual(users["76561197971376839"]["PersonaName"], "Sam")
-            self.assertEqual(account_name(tmp, "11111111"), "Sam")
+            self.assertEqual(users["76561197971376839"]["PersonaName"], "Player")
+            self.assertEqual(account_name(tmp, "11111111"), "Player")
             self.assertIsNone(account_name(tmp, "1"))  # unknown uid -> None
 
     def test_avatar_path(self):
@@ -37,7 +37,7 @@ class UsersTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             self._steam_with_users(tmp)
             infos = account_infos(tmp, ["11111111", "1"])
-            self.assertEqual(infos[0], {"uid": "11111111", "name": "Sam", "has_avatar": False})
+            self.assertEqual(infos[0], {"uid": "11111111", "name": "Player", "has_avatar": False})
             self.assertEqual(infos[1], {"uid": "1", "name": None, "has_avatar": False})
 
 

@@ -16,7 +16,7 @@ You need Windows, Steam, and a free SteamGridDB API key.
    SmartScreen may warn because the build is unsigned: click "More info", then "Run anyway". Windows 11 already includes the Edge WebView2 runtime; on Windows 10, install it if you are prompted.
 2. Get an API key at [steamgriddb.com](https://www.steamgriddb.com) (Preferences > API > Generate API Key) and paste it into ArtDeck when asked. It is saved to `artdeck.key` next to the app.
 3. Pick a game on the left, choose a cover, and click Apply.
-4. Fully restart Steam (tray > Exit, then relaunch) so it re-reads the artwork.
+
 
 Prefer running from source? Run `run_app.bat` (or `pythonw artdeck_app.py`). It installs the GUI dependencies (Pillow, pywebview) on first run.
 
