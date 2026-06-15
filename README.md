@@ -22,13 +22,24 @@ When you add a game to Steam as a non-Steam shortcut (a manual add, an emulator,
 
 You need Windows, Steam, and a free SteamGridDB API key.
 
-1. Download `ArtDeck.exe` from the [latest release](https://github.com/shamilmusaev/ArtDeck/releases/latest).
-   SmartScreen may warn because the build is unsigned: click "More info", then "Run anyway". Windows 11 already includes the Edge WebView2 runtime; on Windows 10, install it if you are prompted.
+1. Download `ArtDeck.exe` from the [latest release](https://github.com/shamilmusaev/ArtDeck/releases/latest). Windows 11 already includes the Edge WebView2 runtime it needs; on Windows 10, install it if you are prompted. (The first run shows a SmartScreen warning, see [below](#windows-protected-your-pc).)
 2. Get an API key at [steamgriddb.com](https://www.steamgriddb.com) (Preferences > API > Generate API Key) and paste it into ArtDeck when asked. It is saved to `artdeck.key` next to the app.
 3. Pick a game on the left, choose a cover, and click Apply.
 
 
 Prefer running from source? Run `run_app.bat` (or `pythonw artdeck_app.py`). It installs the GUI dependencies (Pillow, pywebview) on first run.
+
+### "Windows protected your PC"?
+
+ArtDeck is a free, open-source build and is not code-signed, so Windows SmartScreen warns the first time you run it. That is normal for small open-source tools, and the full source is right here in this repo. To run it anyway: click **More info**, then **Run anyway**.
+
+Want to be sure the download was not tampered with? Check its hash in PowerShell and compare it to the SHA-256 printed on the [release page](https://github.com/shamilmusaev/ArtDeck/releases/latest):
+
+```powershell
+Get-FileHash .\ArtDeck.exe -Algorithm SHA256
+```
+
+Or skip the binary and run from source (above), which never triggers SmartScreen.
 
 ## How to use
 
