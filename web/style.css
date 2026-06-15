@@ -47,7 +47,7 @@ body{
   transition:grid-template-columns .34s cubic-bezier(.4,0,.2,1);
   -webkit-font-smoothing:antialiased;
 }
-body.sidebar-collapsed{ grid-template-columns:80px 1fr; }
+body.sidebar-collapsed{ grid-template-columns:90px 1fr; }
 
 /* ---- atmosphere: grain + drifting glows ---- */
 .grain{
@@ -266,7 +266,7 @@ body.sidebar-collapsed .src-tabs{
   font-family:var(--ui); font-weight:600; font-size:13px; color:var(--dim);
   border-radius:7px; transition:color .18s, gap .22s ease;
 }
-body.sidebar-collapsed .src-tab{ height:40px; }
+body.sidebar-collapsed .src-tab{ height:40px; gap:0; }   /* no gap -> icon truly centered (hidden label left a 7px offset) */
 .src-tab .src-ic{
   flex:0 0 auto; width:18px; height:18px;
 }
@@ -363,7 +363,12 @@ body.sidebar-collapsed .side-cap{display:none}
 
 .game-list{flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:3px; padding:0 3px 50px 0}
 /* collapsed: game list becomes a centered icon rail (names hidden, tooltips via title) */
-body.sidebar-collapsed .game-list{ padding:4px 0 56px; align-items:center; gap:5px }
+/* reserve scrollbar space on BOTH edges so the centered icon rail doesn't shift
+   left when the list overflows (e.g. the longer Installed list shows a scrollbar
+   while the shorter Non-Steam list doesn't) */
+body.sidebar-collapsed .game-list{ padding:4px 0 56px; align-items:center; gap:5px; scrollbar-gutter:stable both-edges }
+/* thin scrollbar in the narrow rail so it sits in its gutter and never overlaps an icon */
+body.sidebar-collapsed .game-list::-webkit-scrollbar{ width:6px }
 body.sidebar-collapsed .game{ padding:5px; gap:0 }
 body.sidebar-collapsed .game .g-nm{ display:none }
 .game{

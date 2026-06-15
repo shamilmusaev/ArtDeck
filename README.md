@@ -1,6 +1,16 @@
-# ArtDeck
+<p align="center">
+  <img src="assets/artdeck-banner.png" width="420" alt="ArtDeck">
+</p>
 
-Set SteamGridDB cover art for your Steam library, including non-Steam shortcuts, from a clean native desktop app for Windows.
+<p align="center">
+  Set SteamGridDB cover art for your Steam library, including non-Steam shortcuts, from a clean native desktop app for Windows.
+</p>
+
+<p align="center">
+  <a href="https://github.com/shamilmusaev/ArtDeck/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/shamilmusaev/ArtDeck?color=5fc8ea"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-5fc8ea"></a>
+  <img alt="Platform" src="https://img.shields.io/badge/platform-Windows-2a2e3a">
+</p>
 
 > ArtDeck is not affiliated with Valve or SteamGridDB.
 
