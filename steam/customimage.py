@@ -18,6 +18,8 @@ _DEFAULT_DATA = {
 
 
 def librarycache_json(steam_path, uid, appid):
+    if not str(uid).isdigit():           # numeric Steam uid only — blocks path traversal
+        raise ValueError("invalid account id")
     return os.path.join(steam_path, "userdata", str(uid), "config",
                         "librarycache", "%d.json" % int(appid))
 

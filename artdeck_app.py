@@ -111,6 +111,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _err(self, msg, code=400):
         self._json({"error": str(msg)}, code)
 
+    def _csrf_ok(self):
+        """Refuse cross-origin / DNS-rebinding requests at mutating endpoints.
+        Only our own page (served from this loopback origin) may drive them; a
+        hostile web page that brute-forced the random port carries a foreign
+        Origin (or a non-loopback Host) and is rejected. <img> GETs are exempt
+        (they can't send custom headers and only read the user's own art)."""
+        port = self.server.server_address[1]
+        if (self.headers.get("Host") or "") not in ("127.0.0.1:%d" % port, "localhost:%d" % port):
+            return False
+        origin = self.headers.get("Origin")
+        if origin and origin not in ("http://127.0.0.1:%d" % port, "http://localhost:%d" % port):
+            return False
+        return True
+
     def _read_json(self):
         n = int(self.headers.get("Content-Length", 0) or 0)
         raw = self.rfile.read(n) if n else b"{}"
@@ -162,9 +176,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._err("not found", 404)
         except BrokenPipeError:
             pass
-        except Exception as e:
+        except Exception:
             try:
-                self._err(e, 500)
+                self._err("server error", 500)   # generic: don't leak paths/stack to the client
             except Exception:
                 pass
 
@@ -176,7 +190,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 "steam_path": STEAM,
                 "accounts": engine.account_infos(STEAM, accounts) if STEAM else [],
                 "key_ok": bool(key),
-                "key": key or "",
             })
         if path == "/api/games":
             acc = q.get("account", [None])[0]
@@ -393,6 +406,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
     # ---- POST ----
     def do_POST(self):
         u = urllib.parse.urlparse(self.path)
+        if not self._csrf_ok():
+            return self._err("forbidden", 403)
         data = self._read_json()
         try:
             if u.path == "/api/apply":
@@ -450,10 +465,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if u.path == "/api/key":
                 val = (data.get("key") or "").strip()
                 engine.save_api_key(val)
-                return self._json({"ok": True, "key_ok": bool(val), "key": val})
+                return self._json({"ok": True, "key_ok": bool(val)})
             return self._err("unknown", 404)
-        except Exception as e:
-            return self._err(e, 500)
+        except Exception:
+            return self._err("server error", 500)   # generic: don't leak paths/stack
 
 
 class Server(socketserver.ThreadingMixIn, http.server.HTTPServer):

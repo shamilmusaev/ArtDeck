@@ -78,6 +78,10 @@ def list_accounts(steam_path):
 
 
 def account_paths(steam_path, uid):
-    """Return (vdf_path, grid_dir) for an account."""
+    """Return (vdf_path, grid_dir) for an account. The uid is always a numeric
+    Steam account id; reject anything else so a crafted `account` value (e.g.
+    '..\\..\\Windows') can't traverse out of userdata when joined into the path."""
+    if not str(uid).isdigit():
+        raise ValueError("invalid account id")
     base = os.path.join(steam_path, "userdata", uid, "config")
     return os.path.join(base, "shortcuts.vdf"), os.path.join(base, "grid")

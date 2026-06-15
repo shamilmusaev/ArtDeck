@@ -83,9 +83,33 @@ def list_arts_raw(endpoint, game_id, api_key, params):
     return payload.get("data") or []
 
 
+MAX_DOWNLOAD = 64 * 1024 * 1024   # hard cap so a hostile/huge URL can't fill RAM/disk
+
+
 def download(url, dest):
+    # Only fetch http(s). Without this, urllib would happily open file:// (copy a
+    # local file into the grid folder) or an internal http:// address (SSRF) when
+    # the URL is attacker-influenced via the API.
+    scheme = parse.urlparse(url).scheme.lower()
+    if scheme not in ("http", "https"):
+        raise SGDBError("refused URL scheme: %s" % (scheme or "(none)"))
     tmp = dest + ".tmp"
     req = request.Request(url, headers={"User-Agent": "ArtDeck/1.0"})
-    with request.urlopen(req, timeout=60) as resp, open(tmp, "wb") as f:
-        f.write(resp.read())
-    os.replace(tmp, dest)
+    try:
+        with request.urlopen(req, timeout=60) as resp, open(tmp, "wb") as f:
+            total = 0
+            while True:
+                chunk = resp.read(65536)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > MAX_DOWNLOAD:
+                    raise SGDBError("download exceeds %d bytes" % MAX_DOWNLOAD)
+                f.write(chunk)
+        os.replace(tmp, dest)
+    except BaseException:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
