@@ -4,7 +4,6 @@
 
 const I18N = {
   ru: {
-    tagline: "обложки для твоей библиотеки",
     account: "Аккаунт",
     key_need: "Вставьте API-ключ",
     key_btn: "API-ключ",
@@ -12,33 +11,30 @@ const I18N = {
     clean: "Удалить лишние",
     tip_autofill: "Скачать и поставить все недостающие арты для игр этого аккаунта. Существующее не трогается.",
     tip_clean: "Удалить осиротевшие арт-файлы: обложки игр, которых больше нет в Steam.",
+    tip_sidebar_hide: "Скрыть сайдбар",
+    tip_sidebar_show: "Показать сайдбар",
+    sidebar_collapse: "Свернуть",
     lang_name: "RU",
 
     tab_nonsteam: "Non-Steam",
-    tab_installed: "Установленные",
+    tab_installed: "Steam",
+    games_section: "Игры",
+
+    account: "Аккаунт",
 
     filter_games: "Поиск игры…",
     search_sgdb: "Найти другую игру на SteamGridDB…",
-    pick_game: "Выбери игру слева",
-    not_found_manual: "Не найдено, попробуй ручной поиск",
     search_error: "Ошибка поиска: ",
     found_n: n => `Найдено: ${n}`,
     nothing_found: "Ничего не найдено",
-    ms_cover_custom: "Своя обложка",
-    ms_cover_steam: "Обложка Steam",
-    ms_cover_none: "Без обложки",
-    ms_searching: "поиск…",
-    ms_variants: n => `${n} вариантов`,
 
     t_cover: "Обложка",
     t_banner: "Баннер",
     t_hero: "Hero",
     t_logo: "Logo",
-    t_icon: "Icon",
 
     only_animated: "Только анимированные",
     current: "Текущая",
-    current_cap: "Стоит в Steam",
     current_hint: "Текущая обложка в Steam, нажми чтобы рассмотреть",
     apply: "Установить",
     preview: "Просмотр",
@@ -47,7 +43,7 @@ const I18N = {
     pick_to_see: "Выбери игру, чтобы увидеть варианты обложек ✨",
     load_variants_err: "Не загрузить варианты: ",
 
-    applied: (f) => `Установлено: ${f} · перезапусти Steam`,
+    applied: (f) => `Установлено: ${f}`,
     warn_competing: "Применено, но в этом слоте остался старый файл, Steam может показать его. Закрой Steam и повтори.",
     warn_corrupt: "Файл скачался повреждённым, попробуй другой вариант.",
     revert: "Вернуть оригинал",
@@ -64,7 +60,6 @@ const I18N = {
     no_key_hint: "Нужен API-ключ SteamGridDB: нажмите «Вставьте API-ключ» вверху справа",
     need_key_title: "Нужен API-ключ SteamGridDB",
     need_key_body: "Без ключа ArtDeck не может загрузить варианты артов. Ключ бесплатный и берётся за минуту.",
-    need_key_sub: "Добавь API-ключ, чтобы увидеть варианты",
     key_steps: "1. Войди на SteamGridDB.  2. Открой Preferences → API.  3. Нажми «Generate API Key».  4. Скопируй ключ и вставь сюда.",
     key_get: "Получить ключ на SteamGridDB",
     error: "Ошибка: ",
@@ -76,7 +71,7 @@ const I18N = {
     run: "Запустить",
     prepare: "Подготовка…",
     to_process: n => `Игр к обработке: ${n}`,
-    autofill_done: (ok, skip, fail) => `Дозаливка: +${ok}, пропущено ${skip}, ошибок ${fail} · перезапусти Steam`,
+    autofill_done: (ok, skip, fail) => `Дозаливка: +${ok}, пропущено ${skip}, ошибок ${fail}`,
     conn_lost: "Соединение прервано",
 
     clean_title: n => `Очистка осиротевших (${n})`,
@@ -93,14 +88,9 @@ const I18N = {
 
     disclaimer: "ArtDeck не аффилирован с Valve или SteamGridDB.",
     animated_badge: "ANIM",
-
-    cov_full: "Все арты на месте",
-    cov_count: n => `${n}/5 артов`,
-    cov_missing: "не хватает",
   },
 
   en: {
-    tagline: "cover art for your library",
     account: "Account",
     key_need: "Add API key",
     key_btn: "API key",
@@ -108,33 +98,30 @@ const I18N = {
     clean: "Remove extras",
     tip_autofill: "Download & set all missing art for this account's games. Existing art is kept.",
     tip_clean: "Delete orphaned art files: covers of games no longer in Steam.",
+    tip_sidebar_hide: "Hide sidebar",
+    tip_sidebar_show: "Show sidebar",
+    sidebar_collapse: "Minimize",
     lang_name: "EN",
 
     tab_nonsteam: "Non-Steam",
-    tab_installed: "Installed",
+    tab_installed: "Steam",
+    games_section: "Games",
+
+    account: "Account",
 
     filter_games: "Search game…",
     search_sgdb: "Find another game on SteamGridDB…",
-    pick_game: "Pick a game on the left",
-    not_found_manual: "Not found, try a manual search",
     search_error: "Search error: ",
     found_n: n => `Found: ${n}`,
     nothing_found: "Nothing found",
-    ms_cover_custom: "Custom cover",
-    ms_cover_steam: "Steam cover",
-    ms_cover_none: "No cover",
-    ms_searching: "searching…",
-    ms_variants: n => `${n} variants`,
 
     t_cover: "Cover",
     t_banner: "Banner",
     t_hero: "Hero",
     t_logo: "Logo",
-    t_icon: "Icon",
 
     only_animated: "Animated only",
     current: "Current",
-    current_cap: "Set in Steam",
     current_hint: "Current art in Steam, click to view",
     apply: "Apply",
     preview: "Preview",
@@ -143,7 +130,7 @@ const I18N = {
     pick_to_see: "Pick a game to see cover options ✨",
     load_variants_err: "Couldn't load variants: ",
 
-    applied: (f) => `Applied: ${f} · restart Steam`,
+    applied: (f) => `Applied: ${f}`,
     warn_competing: "Applied, but an old file remains in this slot, Steam may show it. Close Steam and retry.",
     warn_corrupt: "The file downloaded corrupted, try another variant.",
     revert: "Restore original",
@@ -160,7 +147,6 @@ const I18N = {
     no_key_hint: "No API key: click “Add API key” at the top-right",
     need_key_title: "SteamGridDB API key needed",
     need_key_body: "Without a key ArtDeck can't load art variants. It's free and takes a minute.",
-    need_key_sub: "Add an API key to see variants",
     key_steps: "1. Sign in to SteamGridDB.  2. Open Preferences → API.  3. Click “Generate API Key”.  4. Copy the key and paste it here.",
     key_get: "Get a key on SteamGridDB",
     error: "Error: ",
@@ -172,7 +158,7 @@ const I18N = {
     run: "Run",
     prepare: "Preparing…",
     to_process: n => `Games to process: ${n}`,
-    autofill_done: (ok, skip, fail) => `Auto-fill: +${ok}, skipped ${skip}, errors ${fail} · restart Steam`,
+    autofill_done: (ok, skip, fail) => `Auto-fill: +${ok}, skipped ${skip}, errors ${fail}`,
     conn_lost: "Connection lost",
 
     clean_title: n => `Clean orphans (${n})`,
@@ -189,10 +175,6 @@ const I18N = {
 
     disclaimer: "ArtDeck is not affiliated with Valve or SteamGridDB.",
     animated_badge: "ANIM",
-
-    cov_full: "All art present",
-    cov_count: n => `${n}/5 art`,
-    cov_missing: "missing",
   },
 };
 

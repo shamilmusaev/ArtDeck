@@ -7,7 +7,6 @@ const ICONS = {
   banner: SVG(`<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="10" r="1.6"/><path d="m22 16-5-5L9 19"/>`),
   hero:   SVG(`<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-5h5v5"/>`),
   logo:   SVG(`<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>`),
-  icon:   SVG(`<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/>`),
 };
 const GAME_PH = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M7 12h3M8.5 10.5v3"/><circle cx="15.5" cy="11" r="1"/><circle cx="17.5" cy="13" r="1"/></svg>`;
 const PEEK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
@@ -17,17 +16,14 @@ const TYPES = [
   {id:"banner", ar:"460/215", w:260, fit:"cover"},
   {id:"hero",   ar:"96/31",   w:340, fit:"cover"},
   {id:"logo",   ar:"3/2",     w:210, fit:"contain"},
-  {id:"icon",   ar:"1/1",     w:108, fit:"contain"},
 ];
 const TYPE = Object.fromEntries(TYPES.map(t=>[t.id,t]));
-const STATUS_ORDER = ["cover","banner","hero","logo","icon"];
 
 const state = {
   accounts:[], account:null, source:"shortcut",
-  games:[], selected:null, gameId:null, matchName:null,
+  games:[], selected:null, gameId:null,
   type:"cover", animated:false, candidates:[], selectedArt:null,
   reqToken:0, keyOk:false, key:"",
-  matchState:"", matchError:"", variants:null,
 };
 
 const $  = s=>document.querySelector(s);
@@ -55,13 +51,23 @@ async function init(){
   applyStatic();
   buildTabs();
   $("#filter").addEventListener("input", filterGames);
-  $("#search").addEventListener("keydown", e=>{ if(e.key==="Enter") doSearch(); });
-  document.addEventListener("click", e=>{ const b=$("#candidates"); if(b && !b.contains(e.target)) candOpen(false); });
+  let _searchTimer=null;
+  $("#search").addEventListener("input", ()=>{
+    clearTimeout(_searchTimer);
+    const q=$("#search").value.trim();
+    if(!q){ state.candidates=[]; candOpen(false); return; }
+    if(!state.keyOk) return;
+    _searchTimer=setTimeout(doSearch, 260);          // live typeahead — search as you type
+  });
+  $("#search").addEventListener("focus", ()=>{ if(state.candidates.length) candOpen(true); });
+  $("#search").addEventListener("keydown", e=>{ if(e.key==="Enter"){ clearTimeout(_searchTimer); doSearch(); } });
+  document.addEventListener("click", e=>{ if(!e.target.closest(".match-search")) candOpen(false); });
   document.addEventListener("keydown", e=>{ if(e.key==="Escape") candOpen(false); });
   $("#btn-autofill").addEventListener("click", autofill);
   $("#btn-clean").addEventListener("click", openClean);
   $("#btn-refresh").addEventListener("click", refreshGames);
   $("#btn-refresh").title = t("refresh");
+  initSidebar();
   $("#btn-key").addEventListener("click", editKey);
   $("#btn-settings").addEventListener("click", e=>{ e.stopPropagation(); toggleSettings(); });
   $("#set-key").addEventListener("click", ()=>{ closeSettings(); editKey(); });
@@ -115,8 +121,6 @@ function applyLang(code){
   buildTabs();
   setKey(state.keyOk);
   renderAcctMenu();
-  if(state.selected) renderMatchSub();
-  else $("#match-name").textContent = t("pick_game");
 }
 function openLangPicker(){
   modal(t("lang_title"), `<div class="lang-list" id="lang-list"></div>`,
@@ -180,8 +184,7 @@ function renderGameSkeletons(){
 
 async function loadGames(minMs=0){
   if(!state.account) return;
-  state.selected=null; state.gameId=null; state.matchName=null;
-  $("#match-name").textContent=t("pick_game"); $("#match-sub").textContent="";
+  state.selected=null; state.gameId=null;
   $("#grid").innerHTML=""; $("#candidates").classList.add("hidden");
   // refresh — show the skeleton immediately; a quick switch only if loading takes >160ms
   // (otherwise the skeleton flashes for an instant when local files read instantly).
@@ -196,27 +199,14 @@ async function loadGames(minMs=0){
     const wait=minMs-(Date.now()-t0);         // for refresh, hold the skeleton no shorter than minMs (2s)
     if(wait>0){ if(!shown) showSkel(); await new Promise(r=>setTimeout(r,wait)); }
     renderGames();
-    const first=document.querySelector("#games .game");
-    if(first) first.click();
+    // Defer the auto-select one frame so the list paints first — otherwise
+    // a heavy list (e.g. the Installed tab with many games) freezes while
+    // the click handler runs search + ambient in the same task.
+    requestAnimationFrame(()=>{
+      const first=document.querySelector("#games .game");
+      if(first) first.click();
+    });
   }catch(e){ if(skelTimer) clearTimeout(skelTimer); $("#games").innerHTML=""; toast(t("games_err")+e.message,"bad"); }
-}
-
-// Render the coverage meter for one game (reused for in-place row updates).
-function renderCov(cov, g){
-  cov.innerHTML=""; let have=0;
-  const has=tp=>!!((g.status && g.status[tp]) || (g.official && g.official[tp]));
-  STATUS_ORDER.forEach(tp=>{
-    const custom=!!(g.status && g.status[tp]);
-    const present=has(tp); if(present) have++;
-    // on = our custom art (mint); off = Steam's own art (dim)
-    const seg=el("span","seg"+(tp==="cover"?" cover":"")+(custom?" on":present?" off":""));
-    seg.title=t("t_"+tp)+(present?" ✓":" ✗");
-    cov.appendChild(seg);
-  });
-  const missing=STATUS_ORDER.filter(tp=>!has(tp)).map(tp=>t("t_"+tp));
-  cov.classList.toggle("need", !has("cover"));
-  cov.title = have===5 ? t("cov_full")
-    : t("cov_count",have)+" · "+t("cov_missing")+": "+missing.join(", ");
 }
 
 // Build every row once; filtering and per-row updates reuse these nodes so a
@@ -225,6 +215,7 @@ function renderGames(){
   const box=$("#games"); box.innerHTML="";
   state.games.forEach(g=>{
     const row=el("div","game"); g._row=row;
+    row.title=g.name;   // tooltip — the only label visible when the sidebar is collapsed
     if(state.selected && state.selected.appid===g.appid) row.classList.add("active");
     const ic=el("span","g-ic",GAME_PH);
     const img=el("img"); img.alt="";
@@ -232,8 +223,6 @@ function renderGames(){
     img.src=`/api/gameicon?account=${enc(state.account)}&appid=${g.appid}`;
     row.appendChild(ic);
     row.appendChild(el("span","g-nm",escapeHtml(g.name)));
-    const cov=el("div","cov"); g._cov=cov; renderCov(cov,g);
-    row.appendChild(cov);
     row.addEventListener("click", ()=>selectGame(g,row));
     box.appendChild(row);
   });
@@ -243,98 +232,65 @@ function renderGames(){
 // Show/hide existing rows by the filter text — no rebuild, no icon re-fetch.
 function filterGames(){
   const flt=$("#filter").value.trim().toLowerCase();
+  let n=0;
   state.games.forEach(g=>{
-    if(g._row) g._row.classList.toggle("hidden", !!flt && !g.name.toLowerCase().includes(flt));
+    const hide = !!flt && !g.name.toLowerCase().includes(flt);
+    if(g._row) g._row.classList.toggle("hidden", hide);
+    if(!hide) n++;
   });
-}
-
-// Refresh just one game's coverage meter after apply/revert.
-function updateGameRow(g){
-  if(g && g._cov) renderCov(g._cov, g);
+  const gc=$("#game-count"); if(gc) gc.textContent=String(n);
 }
 
 async function selectGame(g,row){
-  state.selected=g; state.gameId=null; state.matchName=null; state.variants=null;
+  state.selected=g; state.gameId=null;
+  $("#search").value=g.name;            // search box reflects the loaded game; focus shows its SGDB matches
   document.querySelectorAll(".game.active").forEach(r=>r.classList.remove("active"));
   if(row) row.classList.add("active");
   ambientFromImage(`/api/gameicon?account=${enc(state.account)}&appid=${g.appid}`);
-  $("#match-name").textContent=g.name;
   $("#candidates").classList.add("hidden");
   $("#empty").classList.add("hidden");
-  if(!state.keyOk){ state.matchState="nokey"; renderMatchSub(); showNeedKey(); return; }
-  state.matchState="searching"; renderMatchSub();
+  if(!state.keyOk){ showNeedKey(); return; }
   renderSkeletons();
   try{
     const d=await jget("/api/search?q="+enc(g.name));
     state.candidates=d.results||[];
     fillCandidates();
     if(state.candidates.length){ const m=state.candidates[0]; setGame(m.id,m.name); }
-    else { state.matchState="notfound"; renderMatchSub(); }
-  }catch(e){ state.matchState="error"; state.matchError=e.message; renderMatchSub(); }
+  }catch(e){ toast(t("search_error")+e.message,"bad"); }
 }
 
-/* match-bar subline: useful status chips from the game's own data (cover status
-   + coverage) — filled instantly, without waiting on SteamGridDB; plus the
-   search state / variant count and a compact GridDB match. */
-function mchip(cls, text, title){
-  return `<span class="mbadge${cls?" "+cls:""}"${title?` title="${escapeHtml(title)}"`:""}>${escapeHtml(text)}</span>`;
-}
-function renderMatchSub(){
-  const g=state.selected, sub=$("#match-sub");
-  if(!g){ sub.textContent=""; return; }
-  const has=ty=>!!((g.status&&g.status[ty])||(g.official&&g.official[ty]));
-  // 1) cover status — the headline fact (custom / Steam / none)
-  let html;
-  if(g.status&&g.status.cover) html=mchip("ms ok", t("ms_cover_custom"));
-  else if(has("cover")) html=mchip("ms", t("ms_cover_steam"));
-  else html=mchip("ms warn", t("ms_cover_none"));
-  // 2) coverage N/5
-  const have=STATUS_ORDER.filter(has).length;
-  html+=mchip(have===5?"ok":"", t("cov_count", have));
-  // 3) SteamGridDB state / variant count for the active type
-  if(state.matchState==="nokey")        html+=mchip("warn", t("need_key_sub"));
-  else if(state.matchState==="searching") html+=mchip("", "SteamGridDB · "+t("ms_searching"));
-  else if(state.matchState==="notfound")  html+=mchip("warn", t("not_found_manual"));
-  else if(state.matchState==="error")     html+=mchip("warn", t("search_error")+(state.matchError||""));
-  else if(state.matchState==="matched"){
-    html+=(state.variants==null) ? mchip("", "…") : mchip("", t("ms_variants", state.variants));
-    html+=mchip("name", "SteamGridDB · "+state.matchName, state.matchName+" · id "+state.gameId);
-  }
-  sub.innerHTML=html;
-}
 function setGame(id,name){
-  state.gameId=id; state.matchName=name; state.matchState="matched"; state.variants=null;
-  renderMatchSub(); updateCandLabel(); loadArts();
+  state.gameId=id;
+  updateCandLabel(); loadArts();
 }
 
 /* ---------------- manual search ---------------- */
 async function doSearch(){
   const q=$("#search").value.trim() || (state.selected?state.selected.name:"");
   if(!q) return;
+  if(!state.keyOk){ showNeedKey(); return; }
   try{
     const d=await jget("/api/search?q="+enc(q));
     state.candidates=d.results||[];
     fillCandidates();
-    if(state.candidates.length) toast(t("found_n",state.candidates.length));
-    else toast(t("nothing_found"),"bad");
-  }catch(e){ toast(t("error")+e.message,"bad"); }
+    candOpen(true);                                  // drop the live list (results or "nothing found")
+  }catch(e){ toast(t("search_error")+e.message,"bad"); }
 }
-const CHEV='<svg class="cand-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
 function fillCandidates(){
   const box=$("#candidates"); box.innerHTML="";
-  if(!state.candidates.length){ box.classList.add("hidden"); box.classList.remove("open"); return; }
-  const trig=el("button","cand-trigger"); trig.type="button"; trig.title=t("found_n",state.candidates.length);
-  trig.innerHTML=`<span class="cand-count">${state.candidates.length}</span>${CHEV}`;
-  trig.addEventListener("click", e=>{ e.stopPropagation(); candOpen(!box.classList.contains("open")); });
   const menu=el("div","cand-menu");
-  state.candidates.forEach(g=>{
-    const o=el("button","cand-opt"); o.type="button";
-    o.innerHTML=`<span class="cand-opt-name">${escapeHtml(g.name)}</span><span class="cand-opt-id">id ${escapeHtml(String(g.id))}</span>`;
-    o.addEventListener("click", ()=>{ setGame(g.id,g.name); candOpen(false); });
-    menu.appendChild(o);
-  });
-  box.appendChild(trig); box.appendChild(menu);
-  box.classList.remove("hidden"); box.classList.remove("open");
+  if(!state.candidates.length){
+    menu.appendChild(el("div","cand-empty",t("nothing_found")));
+  }else{
+    state.candidates.forEach(g=>{
+      const o=el("button","cand-opt"); o.type="button";
+      o.innerHTML=`<span class="cand-opt-name">${escapeHtml(g.name)}</span><span class="cand-opt-id">id ${escapeHtml(String(g.id))}</span>`;
+      o.addEventListener("click", ()=>{ $("#search").value=g.name; setGame(g.id,g.name); candOpen(false); });
+      menu.appendChild(o);
+    });
+  }
+  box.appendChild(menu);
+  box.classList.remove("hidden");
   updateCandLabel();
 }
 function updateCandLabel(){
@@ -363,7 +319,7 @@ function buildTabs(){
     });
     box.appendChild(tab);
   });
-  $("#anim-wrap").style.display = state.type==="icon" ? "none" : "";
+  $("#anim-wrap").style.display = "";
 }
 
 /* ---------------- art ---------------- */
@@ -388,14 +344,12 @@ async function loadArts(){
   const tp=state.type, cfg=TYPE[tp], token=++state.reqToken, grid=$("#grid");
   const sig=tp+"|"+state.animated;
   if(grid.dataset.skel!==sig || !grid.querySelector(".skeleton")) renderSkeletons();
-  $("#anim-wrap").style.display = tp==="icon" ? "none" : "";
-  state.variants=null; renderMatchSub();   // "..." in the variants chip while loading
+  $("#anim-wrap").style.display = "";
   try{
     const d=await jget(`/api/arts?game_id=${state.gameId}&type=${tp}&animated=${state.animated?1:0}`);
     if(token!==state.reqToken) return;
     grid.querySelectorAll(".skeleton").forEach(s=>s.remove());
     const arts=d.arts||[];
-    state.variants=arts.length; renderMatchSub();
     if(!arts.length){ grid.appendChild(el("div","empty",t("no_variants"))); return; }
     arts.forEach((a,i)=>grid.appendChild(artCard(a,cfg,i)));
   }catch(e){
@@ -407,13 +361,12 @@ async function loadArts(){
 
 function currentCard(cfg){
   const{c,w}=cardShell(cfg,0); c.classList.add("current");
-  c.appendChild(el("span","badge",t("current")));
   const src=`/img?account=${enc(state.account)}&appid=${state.selected.appid}&type=${state.type}&t=${Date.now()}`;
   const img=el("img"); img.style.objectFit=cfg.fit;
   let hasArt=true;
   img.onerror=()=>{ hasArt=false; w.innerHTML=""; w.appendChild(el("div","none",t("none_short"))); c.classList.add("nopic"); };
   img.src=src; w.appendChild(img);
-  c.appendChild(el("div","cur-cap",t("current_cap")));
+  c.appendChild(el("div","cur-cap",t("current")));
   // revert-to-Steam-original button — only if we have our own custom art for this type
   const hasCustom = !!(state.selected && state.selected.status && state.selected.status[state.type]);
   if(hasCustom){
@@ -434,7 +387,7 @@ async function revertArt(){
     const r=await jpost("/api/revert",{account:state.account,appid:g.appid,type:state.type});
     if(r.ok){
       toast((r.removed&&r.removed.length)?t("reverted"):t("nothing_to_revert"),"ok");
-      g.status[state.type]=false; updateGameRow(g);
+      g.status[state.type]=false;
       loadArts();   // re-renders the "Current" card: Steam's original or "none"
     }else toast(t("error")+(r.error||"?"),"bad");
   }catch(e){ toast(t("error")+e.message,"bad"); }
@@ -527,7 +480,7 @@ async function applyArt(a,card){
         img.src=`/img?account=${enc(state.account)}&appid=${state.selected.appid}&type=${state.type}&t=${Date.now()}`;
       });
       const g=state.games.find(x=>x.appid===state.selected.appid);
-      if(g){ g.status[state.type]=true; updateGameRow(g); }
+      if(g){ g.status[state.type]=true; }
     }else{ if(card) card.classList.remove("sel"); toast(t("error")+(r.error||"?"),"bad"); }
   }catch(e){ if(card) card.classList.remove("sel"); toast(t("apply_err")+e.message,"bad"); }
 }
@@ -603,6 +556,20 @@ function setKey(ok){
 }
 function toggleSettings(){ const m=$("#settings-menu"); const open=m.classList.toggle("hidden"); $("#btn-settings").setAttribute("aria-expanded", String(!open)); }
 function closeSettings(){ const m=$("#settings-menu"); if(m) m.classList.add("hidden"); $("#btn-settings").setAttribute("aria-expanded","false"); }
+
+/* ---------------- sidebar collapse ---------------- */
+function initSidebar(){
+  if (localStorage.getItem("artdeck.sidebar") === "1") document.body.classList.add("sidebar-collapsed");
+  const b = $("#btn-sidebar");
+  if (!b) return;
+  const updateTip = ()=>{ b.title = document.body.classList.contains("sidebar-collapsed") ? t("tip_sidebar_show") : t("tip_sidebar_hide"); };
+  updateTip();
+  b.addEventListener("click", ()=>{
+    const collapsed = document.body.classList.toggle("sidebar-collapsed");
+    localStorage.setItem("artdeck.sidebar", collapsed ? "1" : "0");
+    updateTip();
+  });
+}
 const SGDB_KEY_URL = "https://www.steamgriddb.com/profile/preferences/api";
 function openExternal(url){ fetch("/api/open?url="+enc(url)).catch(()=>{}); }
 

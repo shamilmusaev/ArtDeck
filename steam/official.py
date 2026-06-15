@@ -13,7 +13,6 @@ _OFFICIAL = {
     "banner": ("header.jpg", "library_header.jpg"),
     "hero":   ("library_hero.jpg",),
     "logo":   ("logo.png", "logo_2x.png"),
-    "icon":   (),  # the newer layout has no reliable icon file
 }
 
 

@@ -11,7 +11,6 @@ ART_TYPES = {
     "banner": {"endpoint": "grids",  "suffix": "",      "params": {"dimensions": "460x215,920x430"}},
     "hero":   {"endpoint": "heroes", "suffix": "_hero", "params": {}},
     "logo":   {"endpoint": "logos",  "suffix": "_logo", "params": {}},
-    "icon":   {"endpoint": "icons",  "suffix": "_icon", "params": {}},
 }
 
 ART_EXTS = (".png", ".jpg", ".jpeg", ".webp")

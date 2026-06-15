@@ -13,6 +13,7 @@ Deps: pywebview (native window). Without it, opens in the browser.
 import http.server
 import socketserver
 import socket
+import glob
 import json
 import os
 import sys
@@ -44,6 +45,46 @@ def _shortcuts_index(vdf):
         cached = (mtime, {g["appid"]: g for g in engine.load_shortcuts(vdf)})
         _SHORTCUTS_CACHE[vdf] = cached
     return cached[1]
+
+
+# Cache of installed Steam games. The list reads every appmanifest_*.acf across
+# all libraries and parses them — a noticeable freeze on every tab switch for
+# users with 100+ games. The cache is keyed by the (mtime, size) of each
+# manifest plus the libraryfolders.vdf, so it self-invalidates when Steam
+# installs/uninstalls something.
+_INSTALLED_CACHE = {"key": None, "games": None}
+
+
+def _installed_cache_key():
+    """A tuple covering everything load_installed reads. None if Steam is
+    not configured (the engine returns [] in that case anyway)."""
+    if not STEAM:
+        return None
+    key = []
+    for lib in engine.list_libraries(STEAM):
+        lf = os.path.join(lib, "steamapps", "libraryfolders.vdf")
+        try:
+            s = os.stat(lf)
+            key.append((lf, s.st_mtime, s.st_size))
+        except OSError:
+            pass
+        for acf in glob.glob(os.path.join(lib, "steamapps", "appmanifest_*.acf")):
+            try:
+                s = os.stat(acf)
+                key.append((acf, s.st_mtime, s.st_size))
+            except OSError:
+                pass
+    return tuple(key)
+
+
+def _installed_games_cached(_steam_path=None):
+    key = _installed_cache_key()
+    if key is None:
+        return []
+    if _INSTALLED_CACHE["key"] != key:
+        _INSTALLED_CACHE["key"] = key
+        _INSTALLED_CACHE["games"] = engine.load_installed(STEAM)
+    return _INSTALLED_CACHE["games"]
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -133,7 +174,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             acc = q.get("account", [None])[0]
             source = q.get("source", ["shortcut"])[0]
             if acc and STEAM:
-                games = (engine.installed_games(STEAM, acc) if source == "installed"
+                games = (engine.installed_games(STEAM, acc, _load_installed=_installed_games_cached)
+                         if source == "installed"
                          else engine.list_games(STEAM, acc))
             else:
                 games = []

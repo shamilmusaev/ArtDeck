@@ -133,10 +133,12 @@ def list_games(steam_path, uid):
     return games
 
 
-def installed_games(steam_path, uid):
-    """Installed Steam games with art status for the given account's grid."""
+def installed_games(steam_path, uid, _load_installed=None):
+    """Installed Steam games with art status for the given account's grid.
+    _load_installed is an optional override (used by the GUI server to cache
+    the manifest scan; defaults to the in-process load_installed)."""
     _, grid_dir = account_paths(steam_path, uid)
-    games = load_installed(steam_path)
+    games = (_load_installed or load_installed)(steam_path)
     names = grid_index(grid_dir)
     for g in games:
         g["status"] = art_status(grid_dir, g["appid"], names)

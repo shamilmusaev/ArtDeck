@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 steam_art.py — CLI for the steam engine.
-Fetches art (cover, banner, hero, logo, icon) for non-Steam games from
+Fetches art (cover, banner, hero, logo) for non-Steam games from
 SteamGridDB and installs it into Steam (userdata\\<uid>\\config\\grid).
 
 Why: when a game is added to Steam as a non-Steam shortcut (manual add,

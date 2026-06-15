@@ -27,8 +27,13 @@ CLI: `run_steam_art.bat` → `steam_art.py`. GUI: `run_app.bat` → `steam_art_a
 
 - **Имя файла арта = поле `appid` из `shortcuts.vdf`** (напр. Alien Isolation = `2468090731`),
   НЕ вычисляемый CRC. Если `appid` отсутствует/0 — fallback `compute_legacy_appid`.
-- Суффиксы файлов в `ART_TYPES`: cover→`p`, banner→``, hero→`_hero`, logo→`_logo`, icon→`_icon`.
+- Суффиксы файлов в `ART_TYPES`: cover→`p`, banner→``, hero→`_hero`, logo→`_logo`.
   Steam понимает .png/.jpg/.webp; `apply_art` удаляет дубли другого расширения того же типа.
+- **Тип `icon` намеренно НЕ поддерживается** (применение арта-иконки). Иконку non-Steam игры Steam
+  берёт из поля `icon` в `shortcuts.vdf` (абсолютный путь), а НЕ из grid, и перечитывает её только из
+  своих правок / при перезапуске. Поэтому внешне «вживую» сменить иконку нельзя (без закрытия Steam
+  или CEF-инъекции) — тип `icon` убран из `ART_TYPES`, UI и official-арта. Показ значка игры в списке
+  (чтение поля через `game_icon_path` / `/api/gameicon`) — это другое, остаётся.
 - non-Steam appid всегда `>= NONSTEAM_MIN` (0x80000000). Очистка осиротевших трогает только
   такие файлы — арты обычных Steam-игр (маленький appid) НЕ трогаются.
 - Пути: арты в `<Steam>\userdata\<uid>\config\grid\`; читаем `shortcuts.vdf` (не пишем в него →
