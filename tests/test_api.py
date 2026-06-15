@@ -9,7 +9,7 @@ import urllib.parse
 import urllib.request
 from unittest.mock import patch
 
-import steam_art_app as app
+import artdeck_app as app
 from tests.helpers import make_account, make_library, write_file
 
 
@@ -166,7 +166,7 @@ class SecurityTest(ApiBase):
             srv = self.start(tmp)
             # Drive-absolute and dot-dot escapes must never serve files outside web/.
             self.assertEqual(_status(srv, "/C:/Windows/win.ini"), 403)
-            self.assertEqual(_status(srv, "/A:/Apps/steam-art/steam_art.key"), 403)
+            self.assertEqual(_status(srv, "/A:/Windows/win.ini"), 403)
 
     def test_open_rejects_lookalike_hosts(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -197,7 +197,7 @@ class SecurityTest(ApiBase):
                 patch.dict(os.environ):
             os.environ.pop("STEAMGRIDDB_API_KEY", None)
             app.engine.save_api_key("secret123")
-            self.assertTrue(os.path.isfile(os.path.join(tmp, "steam_art.key")))
+            self.assertTrue(os.path.isfile(os.path.join(tmp, "artdeck.key")))
             self.assertEqual(app.engine.load_api_key(None), "secret123")
 
 

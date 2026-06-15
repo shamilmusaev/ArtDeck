@@ -7,7 +7,7 @@ echo ============================================
 echo  Steam Art Downloader (non-Steam games)
 echo ============================================
 echo.
-python steam_art.py %*
+python artdeck_cli.py %*
 echo.
 echo Done. If art was downloaded, restart Steam to see it.
 echo This window will close in 4 seconds...

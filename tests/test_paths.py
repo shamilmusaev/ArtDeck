@@ -32,7 +32,7 @@ class PathsTest(unittest.TestCase):
         import steam.paths as paths
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as tmp:
-            with open(os.path.join(tmp, "steam_art.key"), "w", encoding="utf-8") as f:
+            with open(os.path.join(tmp, "artdeck.key"), "w", encoding="utf-8") as f:
                 f.write("  filekey123  ")
             env_backup = os.environ.pop("STEAMGRIDDB_API_KEY", None)
             try:

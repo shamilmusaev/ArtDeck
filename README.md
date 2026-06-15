@@ -1,88 +1,91 @@
 # ArtDeck
 
-**Обложки для твоей библиотеки Steam.** ArtDeck подтягивает арты
-(обложки, баннеры, hero, logo) из [SteamGridDB](https://www.steamgriddb.com)
-и кладёт их в Steam — красиво, в один клик.
+**Cover art for your Steam library.** ArtDeck pulls artwork (covers, banners, heroes,
+logos) from [SteamGridDB](https://www.steamgriddb.com) and drops it into Steam — in one click.
 
-> ⚠️ ArtDeck **не аффилирован** с Valve или SteamGridDB.
+> ⚠️ ArtDeck is **not affiliated** with Valve or SteamGridDB.
 
-Зачем: при добавлении игры в Steam как **non-Steam** ярлыка (ручное добавление,
-эмуляторы, сторонние лаунчеры) часто не подтягивается вертикальная обложка 600×900 —
-остаётся серая заглушка. А ещё хочется ставить **свои** обложки и на обычные
-установленные Steam-игры. ArtDeck делает и то, и другое.
+Why: when you add a game to Steam as a **non-Steam shortcut** (manual add, emulators,
+third-party launchers like Hydra), Steam often gets no 600×900 vertical cover — leaving a
+gray placeholder in the library. ArtDeck fixes that, and also lets you set **custom** art on
+regular installed Steam games.
 
-## Возможности
+The UI ships in **English by default** with a **Russian** toggle.
 
-- 🖼️ **Визуальный выбор артов** — сетка вариантов с SteamGridDB по 4 типам
-  (обложка, баннер, hero, logo), с предпросмотром в лайтбоксе.
-- 🎮 **Две вкладки** — **Non-Steam** ярлыки и **Установленные** Steam-игры.
-- 🎞️ **Анимированные обложки** — фильтр «только анимированные», лёгкие `.webm`-превью
-  в сетке; применяются с регистрацией, чтобы Steam их анимировал.
-- 👤 **Имена и аватары аккаунтов** (а не голые цифры), иконки игр в списке.
-- 🌈 **Амбиентный фон** — подложка перетекает в палитру выбранной игры.
-- ↺ **Возврат к оригиналу** — убрать свой арт и вернуть обложку Steam.
-- ⚡ **Авто-дозаливка** недостающего и 🧹 **очистка** осиротевших артов.
-- 🔎 **Ручной поиск** игры, если авто-сопоставление промахнулось.
-- 🌍 **RU / EN** — переключатель языка.
-- 💻 Есть и **CLI**-режим без GUI.
+## Quick start
 
-## Запуск
+Requires **Python 3.x** (Windows) and Steam.
 
-Нужен **Python 3.x** (Windows) и Steam.
+1. Get a free SteamGridDB API key:
+   [steamgriddb.com](https://www.steamgriddb.com) → Preferences → API → *Generate API Key*.
+   Paste it into the app (the key button) — it's saved to `artdeck.key`.
+   (Or set the `STEAMGRIDDB_API_KEY` environment variable.)
+2. Run **`run_app.bat`** (or `pythonw artdeck_app.py`) — it installs the GUI deps
+   (Pillow, pywebview) on first run and opens the native ArtDeck window.
 
-1. Получи бесплатный API-ключ SteamGridDB:
-   [steamgriddb.com](https://www.steamgriddb.com) → Preferences → API → Generate.
-   Вставь его в приложении (кнопка ключа) — он сохранится в `steam_art.key`.
-   (Или задай переменную окружения `STEAMGRIDDB_API_KEY`.)
-2. Запусти **`run_app.bat`** (или `pythonw steam_art_app.py`) — доустановит зависимости
-   (Pillow, pywebview) и откроет нативное окно ArtDeck.
+After applying art, **fully restart Steam** (tray → Exit, then relaunch) so it re-reads the
+grid folder.
 
-После применения артов **полностью перезапусти Steam** (трей → Exit, затем снова запуск),
-чтобы он перечитал их из grid-папки.
+## Features
 
-## Сборка в .exe
+- 🖼️ **Visual art picker** — a grid of SteamGridDB variants across 4 types
+  (cover, banner, hero, logo), with a lightbox preview.
+- 🎮 **Two tabs** — **Non-Steam** shortcuts and **Installed** Steam games.
+- 🎞️ **Animated covers** — an "animated only" filter with lightweight `.webm` previews;
+  applied with the registration Steam needs to actually animate them.
+- 👤 **Account names & avatars** (not bare numbers), plus per-game icons in the list.
+- 🌈 **Ambient background** that eases into the selected game's palette.
+- ↺ **Restore original** — remove your art and bring back Steam's own cover.
+- ⚡ **Auto-fill** missing art and 🧹 **clean up** orphaned art files.
+- 🔎 **Manual search** when auto-matching misses.
+- 🌍 **EN / RU** language toggle.
+- 💻 A headless **CLI** mode is included too.
 
-```bat
-run_build.bat        :: или: python build.py
-```
-
-Соберёт одиночный `dist\ArtDeck.exe` (PyInstaller, `web/` в бандле, иконка). PyInstaller —
-dev-зависимость, доустанавливается автоматически. На целевой машине нужен рантайм
-**Edge WebView2** (на Windows 11 есть из коробки). Если `--onefile` капризничает с
-pywebview — в `build.py` есть фолбэк `ONEDIR = True` (сборка в папку).
-
-## CLI (без интерфейса)
+## Build a standalone .exe
 
 ```bat
-python steam_art.py                 :: дозалить недостающее по всем аккаунтам
-python steam_art.py --dry-run       :: показать план, ничего не качая
-python steam_art.py --types cover   :: только обложки
-python steam_art.py --clean         :: удалить осиротевшие арты
-python steam_art.py --account <uid> :: один аккаунт
-python steam_art.py --force         :: перезаписать существующее
+run_build.bat        :: or: python build.py
 ```
 
-## Тесты
+Produces a single `dist\ArtDeck.exe` (PyInstaller, with `web/` bundled and an icon).
+PyInstaller is a dev-only dependency and is installed automatically. The target machine
+needs the **Edge WebView2** runtime (built into Windows 11). If `--onefile` misbehaves with
+pywebview, `build.py` has an `ONEDIR = True` fallback (folder build).
+
+## CLI (no GUI)
+
+```bat
+python artdeck_cli.py                 :: fill missing art across all accounts
+python artdeck_cli.py --dry-run       :: show the plan, download nothing
+python artdeck_cli.py --types cover   :: covers only
+python artdeck_cli.py --clean         :: delete orphaned art
+python artdeck_cli.py --account <uid> :: a single account
+python artdeck_cli.py --force         :: overwrite existing art
+```
+
+## Tests
 
 ```bat
 python -m unittest discover -t . -s tests -v
 ```
 
-Оффлайн, без сети и без реального Steam (всё на временных фикстурах).
+Offline — no network and no real Steam required (everything runs on temp fixtures).
 
-## Как устроено
+## How it works
 
-- **`steam/`** — движок (stdlib-only), модули: `vdf` · `paths` · `sgdb` · `arts` ·
-  `library` · `users` · `icons` · `official` · `customimage` · `verify`.
-- **`steam_art.py`** — тонкая CLI-обёртка над пакетом.
-- **`steam_art_app.py`** — локальный HTTP-сервер + нативное окно (pywebview).
-- **`web/`** — фронтенд (vanilla HTML/CSS/JS, без сборки) + `i18n.js` (RU/EN).
+- **`steam/`** — the engine (stdlib-only): `vdf` · `paths` · `sgdb` · `arts` · `library` ·
+  `users` · `icons` · `official` · `customimage` · `verify`.
+- **`artdeck_cli.py`** — a thin CLI wrapper over the package.
+- **`artdeck_app.py`** — a local HTTP server + native window (pywebview).
+- **`web/`** — the frontend (vanilla HTML/CSS/JS, no build step) + `i18n.js` (EN/RU).
 
-Подробности и заметки для разработки — в [CLAUDE.md](CLAUDE.md).
+## Security & privacy
 
-## Безопасность и приватность
+- `artdeck.key` (your API key) is in `.gitignore` and never committed.
+- ArtDeck only **reads** `shortcuts.vdf` / app manifests and **writes** images into
+  `userdata\<uid>\config\grid\` — it does not modify your Steam shortcuts.
+- It runs locally; the only network calls are to SteamGridDB to fetch art.
 
-- `steam_art.key` (твой API-ключ) — в `.gitignore`, не попадает в репозиторий.
-- ArtDeck только **читает** `shortcuts.vdf`/манифесты и **пишет** картинки в
-  `userdata\<uid>\config\grid\` — сами ярлыки Steam не меняются.
-- Работает локально; в сеть ходит только к SteamGridDB за артами.
+## License
+
+[MIT](LICENSE) © 2026 shamilmusaev

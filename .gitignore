@@ -1,10 +1,11 @@
 # Secret — personal SteamGridDB API key, never committed
-steam_art.key
+artdeck.key
 
 # Python
 __pycache__/
 *.pyc
 *.pyo
+.pytest_cache/
 
 # Temp files
 *.tmp
@@ -21,7 +22,3 @@ venv/
 # IDE
 .vscode/
 .idea/
-
-# Internal dev tooling / planning notes — not part of the shipped project
-.claude/
-docs/superpowers/

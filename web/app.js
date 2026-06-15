@@ -23,7 +23,7 @@ const state = {
   accounts:[], account:null, source:"shortcut",
   games:[], selected:null, gameId:null,
   type:"cover", animated:false, candidates:[], selectedArt:null,
-  reqToken:0, keyOk:false, key:"",
+  reqToken:0, searchToken:0, keyOk:false, key:"",
 };
 
 const $  = s=>document.querySelector(s);
@@ -56,10 +56,10 @@ async function init(){
     clearTimeout(_searchTimer);
     const q=$("#search").value.trim();
     if(!q){ state.candidates=[]; candOpen(false); return; }
-    if(!state.keyOk) return;
+    if(!state.keyOk){ candOpen(false); return; }
     _searchTimer=setTimeout(doSearch, 260);          // live typeahead — search as you type
   });
-  $("#search").addEventListener("focus", ()=>{ if(state.candidates.length) candOpen(true); });
+  $("#search").addEventListener("focus", ()=>{ if(state.candidates.length){ fillCandidates(); candOpen(true); } });
   $("#search").addEventListener("keydown", e=>{ if(e.key==="Enter"){ clearTimeout(_searchTimer); doSearch(); } });
   document.addEventListener("click", e=>{ if(!e.target.closest(".match-search")) candOpen(false); });
   document.addEventListener("keydown", e=>{ if(e.key==="Escape") candOpen(false); });
@@ -251,12 +251,14 @@ async function selectGame(g,row){
   $("#empty").classList.add("hidden");
   if(!state.keyOk){ showNeedKey(); return; }
   renderSkeletons();
+  const tok=++state.searchToken;
   try{
     const d=await jget("/api/search?q="+enc(g.name));
+    if(tok!==state.searchToken) return;   // a newer game pick / search superseded this
     state.candidates=d.results||[];
     fillCandidates();
     if(state.candidates.length){ const m=state.candidates[0]; setGame(m.id,m.name); }
-  }catch(e){ toast(t("search_error")+e.message,"bad"); }
+  }catch(e){ if(tok===state.searchToken) toast(t("search_error")+e.message,"bad"); }
 }
 
 function setGame(id,name){
@@ -269,12 +271,14 @@ async function doSearch(){
   const q=$("#search").value.trim() || (state.selected?state.selected.name:"");
   if(!q) return;
   if(!state.keyOk){ showNeedKey(); return; }
+  const tok=++state.searchToken;
   try{
     const d=await jget("/api/search?q="+enc(q));
+    if(tok!==state.searchToken) return;              // a newer search superseded this one
     state.candidates=d.results||[];
     fillCandidates();
     candOpen(true);                                  // drop the live list (results or "nothing found")
-  }catch(e){ toast(t("search_error")+e.message,"bad"); }
+  }catch(e){ if(tok===state.searchToken) toast(t("search_error")+e.message,"bad"); }
 }
 function fillCandidates(){
   const box=$("#candidates"); box.innerHTML="";
@@ -301,7 +305,8 @@ function updateCandLabel(){
   });
 }
 function candOpen(open){
-  const box=$("#candidates"); if(!box || box.classList.contains("hidden")) return;
+  const box=$("#candidates"); if(!box) return;
+  if(open) box.classList.remove("hidden");   // un-hide so focus can reopen a prior list
   box.classList.toggle("open", open);
   if(open){ const s=box.querySelector(".cand-opt.sel"); if(s) s.scrollIntoView({block:"nearest"}); }
 }

@@ -5,7 +5,7 @@ Run:  python build.py   (or run_build.bat)
 
 PyInstaller is a dev dependency; it isn't part of the engine/app. The target
 machine needs the Edge WebView2 runtime (built into Windows 11). web/ goes into
-the bundle; steam_art.key is created next to the .exe on first key entry (not
+the bundle; artdeck.key is created next to the .exe on first key entry (not
 bundled).
 
 If --onefile is problematic (pywebview/pythonnet), set ONEDIR=True below: it
@@ -29,7 +29,7 @@ def main():
     sep = ";" if os.name == "nt" else ":"
     args = [
         sys.executable, "-m", "PyInstaller",
-        "steam_art_app.py",
+        "artdeck_app.py",
         "--name", "ArtDeck",
         "--windowed",
         "--icon", os.path.join("assets", "artdeck.ico"),
@@ -46,7 +46,7 @@ def main():
         else os.path.join(HERE, "dist", "ArtDeck", "ArtDeck.exe")
     print("\n=== Done ===")
     print("exe:", exe if os.path.isfile(exe) else "(not found — see the PyInstaller log above)")
-    print("Run it — the ArtDeck window opens. steam_art.key appears next to it on key entry.")
+    print("Run it — the ArtDeck window opens. artdeck.key appears next to it on key entry.")
 
 
 if __name__ == "__main__":

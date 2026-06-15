@@ -4,8 +4,8 @@ import glob
 import os
 import sys
 
-# Application directory = where steam_art.py / the .exe lives (NOT inside the
-# steam/ package), so steam_art.key sits next to the app. In a PyInstaller build
+# Application directory = where artdeck_cli.py / the .exe lives (NOT inside the
+# steam/ package), so artdeck.key sits next to the app. In a PyInstaller build
 # this is the folder containing the .exe, not the temporary _MEIPASS dir.
 if getattr(sys, "frozen", False):
     APP_DIR = os.path.dirname(sys.executable)
@@ -19,13 +19,13 @@ DEFAULT_STEAM_PATHS = [
 
 
 def load_api_key(cli_key):
-    """API key, in priority order: cli_key -> env STEAMGRIDDB_API_KEY -> steam_art.key in APP_DIR."""
+    """API key, in priority order: cli_key -> env STEAMGRIDDB_API_KEY -> artdeck.key in APP_DIR."""
     if cli_key:
         return cli_key.strip()
     env = os.environ.get("STEAMGRIDDB_API_KEY")
     if env:
         return env.strip()
-    key_file = os.path.join(APP_DIR, "steam_art.key")
+    key_file = os.path.join(APP_DIR, "artdeck.key")
     if os.path.isfile(key_file):
         with open(key_file, "r", encoding="utf-8-sig") as f:
             return f.read().strip()
@@ -36,7 +36,7 @@ def save_api_key(key):
     """Persist the SteamGridDB key to APP_DIR — the same place load_api_key reads.
     Writing elsewhere (e.g. the script dir, which is a temp dir in a frozen build)
     means the key silently fails to persist."""
-    with open(os.path.join(APP_DIR, "steam_art.key"), "w", encoding="utf-8") as f:
+    with open(os.path.join(APP_DIR, "artdeck.key"), "w", encoding="utf-8") as f:
         f.write((key or "").strip())
 
 

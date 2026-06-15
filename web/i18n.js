@@ -20,12 +20,9 @@ const I18N = {
     tab_installed: "Steam",
     games_section: "Игры",
 
-    account: "Аккаунт",
-
     filter_games: "Поиск игры…",
     search_sgdb: "Найти другую игру на SteamGridDB…",
     search_error: "Ошибка поиска: ",
-    found_n: n => `Найдено: ${n}`,
     nothing_found: "Ничего не найдено",
 
     t_cover: "Обложка",
@@ -107,12 +104,9 @@ const I18N = {
     tab_installed: "Steam",
     games_section: "Games",
 
-    account: "Account",
-
     filter_games: "Search game…",
     search_sgdb: "Find another game on SteamGridDB…",
     search_error: "Search error: ",
-    found_n: n => `Found: ${n}`,
     nothing_found: "Nothing found",
 
     t_cover: "Cover",

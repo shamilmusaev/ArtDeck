@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-steam_art_app.py
+artdeck_app.py
 ================
 GUI for the steam engine in a native window (pywebview). A stdlib HTTP server
 serves the frontend (web/) and a JSON API; the backend calls the engine.
 
-Run:  run_app.bat   (or:  python steam_art_app.py)
+Run:  run_app.bat   (or:  python artdeck_app.py)
 Deps: pywebview (native window). Without it, opens in the browser.
 """
 
@@ -61,6 +61,14 @@ def _installed_cache_key():
     if not STEAM:
         return None
     key = []
+    # config/libraryfolders.vdf is the canonical library list list_libraries also
+    # consults — include it so adding/removing a library invalidates the cache.
+    cfg_lf = os.path.join(STEAM, "config", "libraryfolders.vdf")
+    try:
+        s = os.stat(cfg_lf)
+        key.append((cfg_lf, s.st_mtime, s.st_size))
+    except OSError:
+        pass
     for lib in engine.list_libraries(STEAM):
         lf = os.path.join(lib, "steamapps", "libraryfolders.vdf")
         try:
@@ -211,6 +219,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             except ValueError:
                 return self._err("bad id", 400)
             t = q.get("type", ["cover"])[0]
+            if t not in engine.ART_TYPES:
+                return self._err("bad type", 400)
             animated = q.get("animated", ["0"])[0] in ("1", "true", "yes")
             try:
                 return self._json({"arts": engine.list_arts(gid, t, key, animated=animated)})
@@ -389,6 +399,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 uid = data["account"]
                 appid = int(data["appid"])
                 t = data["type"]
+                if t not in engine.ART_TYPES:
+                    return self._err("bad type", 400)
                 url = data["url"]
                 _, grid = engine.account_paths(STEAM, uid)
                 dest = engine.apply_art(grid, appid, t, url)
@@ -410,6 +422,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 uid = data["account"]
                 appid = int(data["appid"])
                 t = data["type"]
+                if t not in engine.ART_TYPES:
+                    return self._err("bad type", 400)
                 _, grid = engine.account_paths(STEAM, uid)
                 removed = engine.revert_art(grid, appid, t)
                 return self._json({"ok": True, "removed": removed})

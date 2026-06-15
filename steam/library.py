@@ -138,7 +138,10 @@ def installed_games(steam_path, uid, _load_installed=None):
     _load_installed is an optional override (used by the GUI server to cache
     the manifest scan; defaults to the in-process load_installed)."""
     _, grid_dir = account_paths(steam_path, uid)
-    games = (_load_installed or load_installed)(steam_path)
+    # copy each dict: _load_installed may hand back a shared cached list, and we
+    # stamp per-account status — mutating the shared objects would race across
+    # accounts under the threading server.
+    games = [dict(g) for g in (_load_installed or load_installed)(steam_path)]
     names = grid_index(grid_dir)
     for g in games:
         g["status"] = art_status(grid_dir, g["appid"], names)

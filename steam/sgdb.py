@@ -24,7 +24,7 @@ def api_get(path, api_key, params=None, retries=3):
         url += "?" + parse.urlencode(params)
     req = request.Request(url, headers={
         "Authorization": "Bearer " + api_key,
-        "User-Agent": "steam_art.py/1.0",
+        "User-Agent": "ArtDeck/1.0",
     })
     last_err = None
     for attempt in range(retries):
@@ -37,7 +37,7 @@ def api_get(path, api_key, params=None, retries=3):
                 raise SGDBError("invalid response from SteamGridDB for %s" % path)
         except error.HTTPError as e:
             if e.code in (401, 403):
-                raise SGDBAuthError("API key rejected (HTTP %d). Check steam_art.key / STEAMGRIDDB_API_KEY." % e.code)
+                raise SGDBAuthError("API key rejected (HTTP %d). Check artdeck.key / STEAMGRIDDB_API_KEY." % e.code)
             if e.code == 404:
                 return {"success": False, "data": []}
             last_err = "HTTP %d" % e.code
@@ -85,7 +85,7 @@ def list_arts_raw(endpoint, game_id, api_key, params):
 
 def download(url, dest):
     tmp = dest + ".tmp"
-    req = request.Request(url, headers={"User-Agent": "steam_art.py/1.0"})
+    req = request.Request(url, headers={"User-Agent": "ArtDeck/1.0"})
     with request.urlopen(req, timeout=60) as resp, open(tmp, "wb") as f:
         f.write(resp.read())
     os.replace(tmp, dest)

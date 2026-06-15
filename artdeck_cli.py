@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-steam_art.py — CLI for the steam engine.
+artdeck_cli.py — CLI for the steam engine.
 Fetches art (cover, banner, hero, logo) for non-Steam games from
 SteamGridDB and installs it into Steam (userdata\\<uid>\\config\\grid).
 
@@ -13,14 +13,14 @@ without touching what's already there.
 Not affiliated with Valve or SteamGridDB.
 
 Usage:
-    python steam_art.py                  # all accounts, all missing art
-    python steam_art.py --dry-run        # show the plan, download nothing
-    python steam_art.py --account 11111111
-    python steam_art.py --types cover    # covers only
-    python steam_art.py --force          # overwrite existing art
-    python steam_art.py --clean          # delete orphaned art
+    python artdeck_cli.py                  # all accounts, all missing art
+    python artdeck_cli.py --dry-run        # show the plan, download nothing
+    python artdeck_cli.py --account 11111111
+    python artdeck_cli.py --types cover    # covers only
+    python artdeck_cli.py --force          # overwrite existing art
+    python artdeck_cli.py --clean          # delete orphaned art
 
-SteamGridDB API key: env STEAMGRIDDB_API_KEY, the steam_art.key file next to the
+SteamGridDB API key: env STEAMGRIDDB_API_KEY, the artdeck.key file next to the
 script, or the --api-key flag.
 """
 import argparse
@@ -131,7 +131,7 @@ def main():
     if not api_key:
         print("ERROR: no SteamGridDB API key.")
         print("  Create a key at https://www.steamgriddb.com (Preferences -> API) and:")
-        print("  - put it in the steam_art.key file next to the script, OR")
+        print("  - put it in the artdeck.key file next to the script, OR")
         print("  - set the STEAMGRIDDB_API_KEY environment variable, OR")
         print("  - pass it with --api-key")
         return 2
