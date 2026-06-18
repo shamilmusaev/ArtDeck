@@ -21,8 +21,6 @@ def _dump_value(key, value):
     k = _cstring(str(key))
     if isinstance(value, dict):
         return b"\x00" + k + _dump_map(value)
-    if isinstance(value, bool):           # bool is an int subclass - check first
-        return b"\x02" + k + struct.pack("<i", 1 if value else 0)
     if isinstance(value, int):
         if -2147483648 <= value <= 2147483647:
             return b"\x02" + k + struct.pack("<i", value)
@@ -64,7 +62,9 @@ def write_shortcuts(vdf_path, shortcuts):
     if os.path.isfile(vdf_path):
         backup = vdf_path + ".bak"
         shutil.copy2(vdf_path, backup)
-    os.makedirs(os.path.dirname(vdf_path), exist_ok=True)
+    d = os.path.dirname(vdf_path)
+    if d:
+        os.makedirs(d, exist_ok=True)
     tmp = vdf_path + ".tmp"
     with open(tmp, "wb") as f:
         f.write(dump_binary_vdf(shortcuts))

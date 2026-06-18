@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Round-trip and backup tests for the binary shortcuts.vdf writer."""
 import os
 import tempfile
 import unittest
