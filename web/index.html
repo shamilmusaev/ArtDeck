@@ -15,23 +15,11 @@
 
 <header class="topbar">
   <div class="controls">
-    <div class="ctl-search">
-      <div class="match-search">
-      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-      <input id="search" type="text" autocomplete="off">
-      <div id="candidates" class="cand hidden"></div>
-      </div>
-    </div>
-
     <div class="ctl-actions">
-      <button id="btn-autofill" class="btn act-fill">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.8"/><path d="M16.5 14v6"/><path d="M13.5 17h6"/></svg>
-        <span data-i18n="autofill"></span>
-      </button>
-      <button id="btn-clean" class="btn act-clean">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7.5 12 4l7 3.5-7 3.5-7-3.5Z"/><path d="M5 12.5 12 16l7-3.5"/><path d="M8.5 18.5h7"/></svg>
-        <span data-i18n="clean"></span>
-      </button>
+      <div class="mode-seg" id="mode-seg">
+        <button class="mode-opt active" data-mode="covers" data-i18n="mode_covers"></button>
+        <button class="mode-opt" data-mode="import" data-i18n="mode_import"></button>
+      </div>
 
       <span class="ctl-div"></span>
 
@@ -113,17 +101,44 @@
   </aside>
 
   <section class="content">
-    <div class="toolbar">
-      <div id="tabs" class="type-tabs"></div>
-      <label class="anim-toggle" id="anim-wrap">
-        <input type="checkbox" id="anim">
-        <span class="sw"></span>
-        <span class="anim-lbl" data-i18n="only_animated"></span>
-      </label>
+    <div class="toolbar" id="covers-toolbar">
+      <div class="ctl-search">
+        <div class="match-search">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="search" type="text" autocomplete="off">
+          <div id="candidates" class="cand hidden"></div>
+        </div>
+      </div>
+      <div class="toolbar-right">
+        <div id="tabs" class="type-tabs"></div>
+        <label class="anim-toggle" id="anim-wrap">
+          <input type="checkbox" id="anim">
+          <span class="sw"></span>
+          <span class="anim-lbl" data-i18n="only_animated"></span>
+        </label>
+        <span class="ctl-div toolbar-div"></span>
+        <button id="btn-autofill" class="btn act-fill">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.8"/><path d="M16.5 14v6"/><path d="M13.5 17h6"/></svg>
+          <span data-i18n="autofill"></span>
+        </button>
+        <button id="btn-clean" class="btn act-clean">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7.5 12 4l7 3.5-7 3.5-7-3.5Z"/><path d="M5 12.5 12 16l7-3.5"/><path d="M8.5 18.5h7"/></svg>
+          <span data-i18n="clean"></span>
+        </button>
+      </div>
     </div>
 
     <div id="grid" class="art-grid"></div>
     <div id="empty" class="empty hidden" data-i18n="pick_to_see"></div>
+
+    <div id="import-view" class="import-view hidden">
+      <div id="import-cards" class="import-cards"></div>
+      <div class="import-bar">
+        <label class="import-art"><input type="checkbox" id="import-art" checked>
+          <span data-i18n="import_download_art"></span></label>
+        <button id="import-add" class="btn primary"></button>
+      </div>
+    </div>
   </section>
 
 <footer class="footnote"><span data-i18n="disclaimer"></span></footer>

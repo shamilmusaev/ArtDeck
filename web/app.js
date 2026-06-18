@@ -24,6 +24,7 @@ const state = {
   games:[], selected:null, gameId:null,
   type:"cover", animated:false, candidates:[], selectedArt:null,
   reqToken:0, searchToken:0, keyOk:false,
+  mode:"covers", launchers:[], activeLauncher:null,
 };
 
 const $  = s=>document.querySelector(s);
@@ -42,6 +43,8 @@ function applyStatic(){
   $("#btn-autofill").dataset.tip = t("tip_autofill");
   $("#btn-clean").dataset.tip = t("tip_clean");
   document.documentElement.lang = LANG;
+  // import-add label includes count — update separately
+  _updateImportAddLabel();
 }
 
 /* ---------------- init ---------------- */
@@ -68,6 +71,12 @@ async function init(){
   $("#btn-refresh").addEventListener("click", refreshGames);
   $("#btn-refresh").title = t("refresh");
   initSidebar();
+  // mode switch
+  $("#mode-seg").addEventListener("click", e=>{
+    const b = e.target.closest(".mode-opt"); if(b) setMode(b.dataset.mode);
+  });
+  // import add
+  $("#import-add").addEventListener("click", doImport);
   $("#btn-key").addEventListener("click", editKey);
   $("#btn-settings").addEventListener("click", e=>{ e.stopPropagation(); toggleSettings(); });
   $("#set-key").addEventListener("click", ()=>{ closeSettings(); editKey(); });
@@ -120,6 +129,7 @@ function applyLang(code){
   buildTabs();
   setKey(state.keyOk);
   renderAcctMenu();
+  if(state.mode==="import") _updateImportAddLabel();
 }
 function openLangPicker(){
   modal(t("lang_title"), `<div class="lang-list" id="lang-list"></div>`,
@@ -574,6 +584,173 @@ function initSidebar(){
     updateTip();
   });
 }
+/* ---------------- mode switch (Covers / Import) ---------------- */
+function setMode(mode){
+  state.mode = mode;
+  document.querySelectorAll(".mode-opt").forEach(b=>b.classList.toggle("active", b.dataset.mode===mode));
+  document.body.classList.toggle("is-import", mode==="import");
+  const coversToolbar = $("#covers-toolbar");
+  if(coversToolbar) coversToolbar.classList.toggle("hidden", mode==="import");
+  if(mode==="import"){
+    $("#grid").classList.add("hidden");
+    $("#empty").classList.add("hidden");
+    $("#import-view").classList.remove("hidden");
+    // swap sidebar: show launcher list instead of game list
+    loadLaunchers();
+  } else {
+    $("#grid").classList.remove("hidden");
+    $("#import-view").classList.add("hidden");
+    // restore sidebar: show game list
+    _showCoversSidebar();
+  }
+}
+
+function _showCoversSidebar(){
+  const lb = $("#launcher-list");
+  if(lb) lb.remove();
+  const sc = $(".side-cap"); if(sc) sc.style.display = "";
+  const gl = $("#games"); if(gl) gl.style.display = "";
+  const fi = $(".filter"); if(fi) fi.style.display = "";
+  const st = $(".src-tabs"); if(st) st.style.display = "";
+}
+
+async function loadLaunchers(){
+  if(!state.account) return;
+  // hide covers-mode sidebar elements; show launcher list instead
+  const sc = $(".side-cap"); if(sc) sc.style.display = "none";
+  const gl = $("#games"); if(gl) gl.style.display = "none";
+  const fi = $(".filter"); if(fi) fi.style.display = "none";
+  const st = $(".src-tabs"); if(st) st.style.display = "none";
+
+  let lb = $("#launcher-list");
+  if(!lb){
+    lb = el("div","launcher-list"); lb.id = "launcher-list";
+    const sidebar = $(".sidebar");
+    // insert after brand
+    const brand = $(".sidebar .brand");
+    if(brand && brand.nextSibling) sidebar.insertBefore(lb, brand.nextSibling);
+    else sidebar.appendChild(lb);
+  }
+  lb.innerHTML = `<div class="scan-banner"><span class="scan-spin"></span><span>${escapeHtml(t("scanning"))}</span></div>`;
+
+  try{
+    const d = await jget("/api/launchers?account="+enc(state.account));
+    state.launchers = d.launchers || [];
+    renderLaunchers();
+  }catch(e){ lb.innerHTML = ""; toast(t("error")+e.message,"bad"); }
+}
+
+function renderLaunchers(){
+  const lb = $("#launcher-list"); if(!lb) return;
+  lb.innerHTML = "";
+  if(!state.launchers.length){
+    lb.appendChild(el("div","launcher-empty",t("import_no_launchers")));
+    return;
+  }
+  const cap = el("div","side-cap");
+  cap.appendChild(el("span","side-cap-t",t("import_launchers_section")));
+  lb.appendChild(cap);
+  state.launchers.forEach(lau=>{
+    const row = el("div","launcher-row"+(state.activeLauncher===lau.key?" active":""));
+    row.title = lau.label;
+    const nm = el("span","launcher-nm",escapeHtml(lau.label));
+    const cnt = el("span","launcher-cnt",String((lau.games||[]).length));
+    row.appendChild(nm); row.appendChild(cnt);
+    row.addEventListener("click", ()=>selectLauncher(lau));
+    lb.appendChild(row);
+  });
+  // auto-select first launcher
+  if(state.launchers.length && !state.activeLauncher){
+    selectLauncher(state.launchers[0]);
+  }
+}
+
+function selectLauncher(lau){
+  state.activeLauncher = lau.key;
+  document.querySelectorAll(".launcher-row").forEach(r=>r.classList.remove("active"));
+  const rows = document.querySelectorAll(".launcher-row");
+  const idx = state.launchers.findIndex(l=>l.key===lau.key);
+  if(rows[idx]) rows[idx].classList.add("active");
+  renderImportCards(lau.games || []);
+}
+
+function renderImportCards(games){
+  const box = $("#import-cards"); box.innerHTML = "";
+  if(!games.length){
+    box.appendChild(el("div","import-empty",t("import_no_games")));
+    _updateImportAddLabel();
+    return;
+  }
+  games.forEach(g=>{
+    const card = el("div","imp-card");
+    const cb = el("input"); cb.type = "checkbox"; cb.className = "imp-cb"; cb.checked = true;
+    cb.dataset.appid = String(g.appid);
+    cb.addEventListener("change", _updateImportAddLabel);
+    const ic = el("span","g-ic imp-ic",GAME_PH);
+    const img = el("img"); img.alt = "";
+    img.addEventListener("load", ()=>{ ic.innerHTML = ""; ic.appendChild(img); });
+    img.src = "/api/gameicon?account="+enc(state.account)+"&appid="+enc(String(g.appid));
+    ic.appendChild(img);
+    const nm = el("span","imp-nm",escapeHtml(g.name));
+    card.appendChild(cb); card.appendChild(ic); card.appendChild(nm);
+    box.appendChild(card);
+  });
+  _updateImportAddLabel();
+}
+
+function _checkedImportAppids(){
+  return [...document.querySelectorAll(".imp-cb:checked")].map(cb=>cb.dataset.appid);
+}
+
+function _updateImportAddLabel(){
+  const btn = $("#import-add"); if(!btn) return;
+  const n = _checkedImportAppids().length;
+  btn.textContent = t("import_add_btn").replace("%d", String(n));
+}
+
+async function doImport(){
+  const appids = _checkedImportAppids();
+  if(!appids.length) return;
+  let close_steam = false;
+  try{
+    const sr = await jget("/api/steam-running");
+    if(sr.running){
+      const confirmed = await _confirmDialog(t("import_close_steam"));
+      if(!confirmed) return;
+      close_steam = true;
+    }
+  }catch(e){ /* if endpoint missing, proceed without check */ }
+  try{
+    const res = await jpost("/api/import", {account:state.account, appids, close_steam});
+    if(res.ok){
+      toast(t("import_done").replace("%d", String(res.added)), "ok");
+      if($("#import-art").checked){ runAutofill(state.account); }
+    } else if(res.steam_running){
+      // server says Steam is open; ask to close it
+      const confirmed = await _confirmDialog(t("import_close_steam"));
+      if(!confirmed) return;
+      const res2 = await jpost("/api/import", {account:state.account, appids, close_steam:true});
+      if(res2.ok){
+        toast(t("import_done").replace("%d", String(res2.added)), "ok");
+        if($("#import-art").checked){ runAutofill(state.account); }
+      } else {
+        toast(t("error")+(res2.error||"?"), "bad");
+      }
+    } else {
+      toast(t("error")+(res.error||"?"), "bad");
+    }
+  }catch(e){ toast(t("error")+e.message, "bad"); }
+}
+
+// minimal confirm dialog using the existing modal/closeModal helpers
+function _confirmDialog(msg){
+  return new Promise(resolve=>{
+    modal(msg, "",
+      [{x:t("cancel"), cls:"ghost", fn:()=>{ closeModal(); resolve(false); }},
+       {x:t("run"),    cls:"primary", fn:()=>{ closeModal(); resolve(true); }}]);
+  });
+}
+
 const SGDB_KEY_URL = "https://www.steamgriddb.com/profile/preferences/api";
 function openExternal(url){ fetch("/api/open?url="+enc(url)).catch(()=>{}); }
 

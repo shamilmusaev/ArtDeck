@@ -85,6 +85,16 @@ const I18N = {
 
     disclaimer: "ArtDeck не аффилирован с Valve или SteamGridDB.",
     animated_badge: "ANIM",
+
+    mode_covers: "Обложки",
+    mode_import: "Импорт",
+    import_launchers_section: "Лаунчеры",
+    import_no_launchers: "Сторонние лаунчеры не найдены",
+    import_no_games: "Нет новых игр для импорта",
+    import_download_art: "Скачать арты",
+    import_add_btn: "Добавить %d в Steam",
+    import_close_steam: "Steam запущен. Закрыть его и продолжить?",
+    import_done: "Добавлено игр: %d. Перезапусти Steam.",
   },
 
   en: {
@@ -169,6 +179,16 @@ const I18N = {
 
     disclaimer: "ArtDeck is not affiliated with Valve or SteamGridDB.",
     animated_badge: "ANIM",
+
+    mode_covers: "Covers",
+    mode_import: "Import",
+    import_launchers_section: "Launchers",
+    import_no_launchers: "No third-party launchers found",
+    import_no_games: "No new games to import",
+    import_download_art: "Download art",
+    import_add_btn: "Add %d to Steam",
+    import_close_steam: "Steam is running. Close it and continue?",
+    import_done: "Added %d games. Restart Steam to see them.",
   },
 };
 
