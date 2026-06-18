@@ -20,6 +20,10 @@ class ShortcutsTest(unittest.TestCase):
         self.assertIn("ArtDeck", e["tags"].values())
         self.assertTrue(-2147483648 <= e["appid"] <= 2147483647)  # stored signed
 
+    def test_launcher_tag_propagates(self):
+        e = build_shortcut_entry(GAME)
+        self.assertIn("epic", e["tags"].values())
+
     def test_append_and_dedupe(self):
         m = {}
         m, added = append_shortcuts(m, [GAME])

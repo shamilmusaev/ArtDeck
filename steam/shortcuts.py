@@ -53,7 +53,8 @@ def append_shortcuts(shortcuts_map, new_games):
             aid = get_ci(entry, "appid")
             if aid is not None:
                 existing.add(aid & 0xffffffff)
-    idx = len(shortcuts_map)
+    nums = [int(k) for k in shortcuts_map if str(k).isdigit()]
+    idx = max(nums) + 1 if nums else 0
     added = 0
     for g in new_games:
         aid = game_appid(g)

@@ -162,11 +162,17 @@ function renderAcctMenu(){
 }
 function selectAccount(uid){
   state.account = uid;
+  state.launchers = [];
+  state.activeLauncher = null;
   const a = state.accounts.find(x=>x.uid===uid) || {uid};
   const av=$("#acct-av"); av.style.cssText=avatarStyle(a); av.textContent = a.has_avatar ? "" : acctInitial(a);
   $("#acct-name").textContent = a.name || uid;
   renderAcctMenu();
-  loadGames();
+  if(state.mode === "import"){
+    loadLaunchers();
+  } else {
+    loadGames();
+  }
 }
 function toggleAcctMenu(){ if($("#acct").classList.contains("solo")) return; const m=$("#acct-menu"); const open=m.classList.toggle("hidden"); $("#acct-btn").setAttribute("aria-expanded", String(!open)); }
 function closeAcctMenu(){ $("#acct-menu").classList.add("hidden"); $("#acct-btn").setAttribute("aria-expanded","false"); }
@@ -746,8 +752,8 @@ async function doImport(){
 function _confirmDialog(msg){
   return new Promise(resolve=>{
     modal(msg, "",
-      [{x:t("cancel"), cls:"ghost", fn:()=>{ closeModal(); resolve(false); }},
-       {x:t("run"),    cls:"primary", fn:()=>{ closeModal(); resolve(true); }}]);
+      [{x:t("cancel"),              cls:"ghost",   fn:()=>{ closeModal(); resolve(false); }},
+       {x:t("import_close_confirm"), cls:"primary", fn:()=>{ closeModal(); resolve(true); }}]);
   });
 }
 

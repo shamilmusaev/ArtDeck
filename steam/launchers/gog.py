@@ -44,8 +44,7 @@ def _registry_reader():
 
 
 def detect(reader=None):
-    """[{"name","exe","start_dir","launcher":"gog"}]. reader() yields raw value
-    dicts; injectable for tests."""
+    """Return a list of game dicts (keys: name, exe, start_dir, launcher='gog'). reader() yields raw registry value dicts and is injectable for tests."""
     read = reader or _registry_reader()
     games = []
     for vals in read():
