@@ -99,6 +99,7 @@ const I18N = {
     import_refresh: "Пересканировать лаунчеры",
     import_view_grid: "Сетка",
     import_view_list: "Список",
+    import_refreshed: "Лаунчеры пересканированы",
   },
 
   en: {
@@ -197,6 +198,7 @@ const I18N = {
     import_refresh: "Rescan launchers",
     import_view_grid: "Grid view",
     import_view_list: "List view",
+    import_refreshed: "Launchers rescanned",
   },
 };
 

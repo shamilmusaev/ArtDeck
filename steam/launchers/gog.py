@@ -4,6 +4,7 @@ against the Galaxy 2.0 SQLite database so phantom registry entries are dropped."
 import glob
 import os
 import sqlite3
+from pathlib import Path
 
 GOG_KEY = r"SOFTWARE\WOW6432Node\GOG.com\Games"
 
@@ -23,7 +24,8 @@ def installed_product_ids(db_path=None):
         return None
     conn = None
     try:
-        conn = sqlite3.connect("file:%s?mode=ro" % path, uri=True)
+        uri = Path(path).as_uri() + "?mode=ro"
+        conn = sqlite3.connect(uri, uri=True)
         cur = conn.execute("select productId from InstalledBaseProducts")
         return {int(row[0]) for row in cur.fetchall()}
     except Exception:

@@ -686,7 +686,7 @@ async function refreshLaunchers(){
   state.activeLauncher = null;
   await loadLaunchers();
   const b2 = $("#btn-launcher-refresh"); if(b2) b2.classList.remove("spin");
-  toast(t("refreshed"), "ok");
+  toast(t("import_refreshed"), "ok");
 }
 
 function _launcherIcon(key){
@@ -753,6 +753,8 @@ function _initImportViewToggle(){
   const saved = localStorage.getItem("artdeck.importview") || "grid";
   _setImportView(saved, false);
   const gb = $("#ivt-grid"), lb = $("#ivt-list"); if(!gb || !lb) return;
+  gb.title = t("import_view_grid");
+  lb.title = t("import_view_list");
   gb.addEventListener("click", ()=>_setImportView("grid", true));
   lb.addEventListener("click", ()=>_setImportView("list", true));
 }
