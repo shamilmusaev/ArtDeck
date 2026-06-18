@@ -595,7 +595,9 @@ function setMode(mode){
   state.mode = mode;
   document.querySelectorAll(".mode-opt").forEach(b=>b.classList.toggle("active", b.dataset.mode===mode));
   document.body.classList.toggle("is-import", mode==="import");
+  const searchRow = $("#search-row");
   const coversToolbar = $("#covers-toolbar");
+  if(searchRow) searchRow.classList.toggle("hidden", mode==="import");
   if(coversToolbar) coversToolbar.classList.toggle("hidden", mode==="import");
   if(mode==="import"){
     $("#grid").classList.add("hidden");

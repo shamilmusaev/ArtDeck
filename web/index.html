@@ -15,15 +15,14 @@
 
 <header class="topbar">
   <div class="controls">
-    <div class="ctl-actions">
-      <div class="mode-seg" id="mode-seg">
-        <button class="mode-opt active" data-mode="covers" data-i18n="mode_covers"></button>
-        <button class="mode-opt" data-mode="import" data-i18n="mode_import"></button>
-      </div>
+    <div class="mode-seg" id="mode-seg">
+      <button class="mode-opt active" data-mode="covers" data-i18n="mode_covers"></button>
+      <button class="mode-opt" data-mode="import" data-i18n="mode_import"></button>
+    </div>
 
-      <span class="ctl-div"></span>
+    <span class="topbar-spacer"></span>
 
-      <button id="btn-key" class="btn keybtn bad hidden">
+    <button id="btn-key" class="btn keybtn bad hidden">
       <span class="key-dot"></span>
       <span id="key-label"></span>
     </button>
@@ -57,7 +56,6 @@
         <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
       </button>
       <div id="acct-menu" class="acct-menu hidden" role="listbox"></div>
-    </div>
     </div>
   </div>
 </header>
@@ -101,7 +99,8 @@
   </aside>
 
   <section class="content">
-    <div class="toolbar" id="covers-toolbar">
+    <!-- Row 1: search + fill/clean actions — hidden in import mode -->
+    <div class="search-row" id="search-row">
       <div class="ctl-search">
         <div class="match-search">
           <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
@@ -109,23 +108,23 @@
           <div id="candidates" class="cand hidden"></div>
         </div>
       </div>
-      <div class="toolbar-right">
-        <div id="tabs" class="type-tabs"></div>
-        <label class="anim-toggle" id="anim-wrap">
-          <input type="checkbox" id="anim">
-          <span class="sw"></span>
-          <span class="anim-lbl" data-i18n="only_animated"></span>
-        </label>
-        <span class="ctl-div toolbar-div"></span>
-        <button id="btn-autofill" class="btn act-fill">
-          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.8"/><path d="M16.5 14v6"/><path d="M13.5 17h6"/></svg>
-          <span data-i18n="autofill"></span>
-        </button>
-        <button id="btn-clean" class="btn act-clean">
-          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7.5 12 4l7 3.5-7 3.5-7-3.5Z"/><path d="M5 12.5 12 16l7-3.5"/><path d="M8.5 18.5h7"/></svg>
-          <span data-i18n="clean"></span>
-        </button>
-      </div>
+      <button id="btn-autofill" class="btn act-fill">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.8"/><path d="M16.5 14v6"/><path d="M13.5 17h6"/></svg>
+        <span data-i18n="autofill"></span>
+      </button>
+      <button id="btn-clean" class="btn act-clean">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7.5 12 4l7 3.5-7 3.5-7-3.5Z"/><path d="M5 12.5 12 16l7-3.5"/><path d="M8.5 18.5h7"/></svg>
+        <span data-i18n="clean"></span>
+      </button>
+    </div>
+    <!-- Row 2: type tabs + animated toggle — hidden in import mode -->
+    <div class="toolbar" id="covers-toolbar">
+      <div id="tabs" class="type-tabs"></div>
+      <label class="anim-toggle" id="anim-wrap">
+        <input type="checkbox" id="anim">
+        <span class="sw"></span>
+        <span class="anim-lbl" data-i18n="only_animated"></span>
+      </label>
     </div>
 
     <div id="grid" class="art-grid"></div>

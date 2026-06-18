@@ -92,10 +92,18 @@ body.sidebar-collapsed .sidebar .brand{justify-content:center; padding:0; gap:0}
 .word em{font-style:normal; color:var(--coral)}
 body.sidebar-collapsed .word{display:none}
 
-.controls{flex:1; min-width:0; display:flex; align-items:center; justify-content:space-between; gap:16px}
-.ctl-search{flex:1 1 280px; min-width:0; display:flex; max-width:520px}
-.ctl-search .match-search{flex:1; min-width:0; max-width:none}
+.controls{flex:1; display:flex; align-items:center; gap:10px}
+.topbar-spacer{flex:1 1 auto}
+.ctl-search{flex:1 1 auto; min-width:0; display:flex}
+.ctl-search .match-search{flex:1; min-width:200px; max-width:none}
 .ctl-actions{flex:0 0 auto; display:flex; align-items:center; gap:10px}
+
+/* search row below topbar: search full-width, fill/clean to right */
+.search-row{
+  flex:0 0 auto; display:flex; align-items:center; gap:10px;
+}
+.search-row .ctl-search{ flex:1 1 auto; min-width:0; }
+.search-row .ctl-search .match-search{ flex:1; min-width:200px; max-width:none; }
 
 /* ---- buttons ---- */
 .btn{
