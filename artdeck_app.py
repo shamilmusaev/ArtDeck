@@ -477,7 +477,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self._json({"ok": True, "key_ok": bool(val)})
             if u.path == "/api/import":
                 uid = data.get("account")
-                appids = set(int(a) for a in data.get("appids", []))
+                try:
+                    appids = set(int(a) for a in data.get("appids", []))
+                except (ValueError, TypeError):
+                    return self._err("bad appids", 400)
                 close_steam = bool(data.get("close_steam"))
                 if not (uid and STEAM and appids):
                     return self._err("bad", 400)
@@ -492,12 +495,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
                             chosen.append(g)
                 if running:
                     engine.steamproc.shutdown(STEAM)
-                vdf, _ = engine.account_paths(STEAM, uid)
-                m = engine.read_shortcuts_map(vdf)
-                m, added = engine.append_shortcuts(m, chosen)
-                engine.write_shortcuts(vdf, m)
-                if running:
-                    engine.steamproc.launch(STEAM)
+                try:
+                    vdf, _ = engine.account_paths(STEAM, uid)
+                    m = engine.read_shortcuts_map(vdf)
+                    m, added = engine.append_shortcuts(m, chosen)
+                    engine.write_shortcuts(vdf, m)
+                finally:
+                    if running:
+                        engine.steamproc.launch(STEAM)
                 return self._json({"ok": True, "added": added, "relaunched": running})
             return self._err("unknown", 404)
         except Exception:
