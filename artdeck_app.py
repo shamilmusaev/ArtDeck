@@ -34,6 +34,10 @@ STEAM = engine.find_steam_path(None)
 # by mtime — the icon endpoint is hit once per game row on every list render.
 _SHORTCUTS_CACHE = {}
 
+# Cache for /api/launcher-cover results, keyed by lowercased game name.
+# Values are either {"thumb": url} or None (no match / error).
+_LAUNCHER_COVER_CACHE = {}
+
 
 def _shortcuts_index(vdf):
     try:
@@ -268,6 +272,28 @@ class Handler(http.server.BaseHTTPRequestHandler):
             vdf, _ = engine.account_paths(STEAM, acc)
             have = {g["appid"] for g in engine.load_shortcuts(vdf)}
             return self._json({"launchers": engine.detect_all(exclude_appids=have)})
+        if path == "/api/launcher-cover":
+            name = q.get("name", [None])[0]
+            if not name:
+                return self._err("bad", 400)
+            if not key:
+                return self._err("no key", 404)
+            cache_key = name.lower()
+            if cache_key not in _LAUNCHER_COVER_CACHE:
+                try:
+                    gid, _ = engine.search_game_id(name, key)
+                    if not gid:
+                        _LAUNCHER_COVER_CACHE[cache_key] = None
+                    else:
+                        arts = engine.list_arts(gid, "cover", key, limit=1)
+                        thumb = arts[0]["thumb"] if arts else None
+                        _LAUNCHER_COVER_CACHE[cache_key] = thumb
+                except engine.SGDBError:
+                    _LAUNCHER_COVER_CACHE[cache_key] = None
+            result = _LAUNCHER_COVER_CACHE[cache_key]
+            if not result:
+                return self._err("none", 404)
+            return self._json({"thumb": result})
         return self._err("unknown", 404)
 
     def _send_index(self):

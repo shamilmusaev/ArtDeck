@@ -224,5 +224,42 @@ class SecurityTest(ApiBase):
             self.assertEqual(app.engine.load_api_key(None), "secret123")
 
 
+class LauncherCoverTest(ApiBase):
+    def setUp(self):
+        # Clear the module-level cache before each test so tests are isolated.
+        app._LAUNCHER_COVER_CACHE.clear()
+
+    def test_launcher_cover_returns_thumb(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            srv = self.start(tmp)
+            with patch.object(app.engine, "load_api_key", lambda *_: "k"), \
+                 patch.object(app.engine, "search_game_id", return_value=(42, "Some Game")), \
+                 patch.object(app.engine, "list_arts",
+                              return_value=[{"url": "https://cdn.sgdb.com/full.jpg",
+                                             "thumb": "https://cdn.sgdb.com/thumb.jpg",
+                                             "width": 600, "height": 900,
+                                             "style": "material", "animated": False}]):
+                code, body = _get(srv, "/api/launcher-cover?name=Some%20Game")
+            self.assertEqual(code, 200)
+            self.assertEqual(json.loads(body), {"thumb": "https://cdn.sgdb.com/thumb.jpg"})
+
+    def test_launcher_cover_404_when_no_match(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            srv = self.start(tmp)
+            with patch.object(app.engine, "load_api_key", lambda *_: "k"), \
+                 patch.object(app.engine, "search_game_id", return_value=(None, None)):
+                with self.assertRaises(urllib.error.HTTPError) as cm:
+                    _get(srv, "/api/launcher-cover?name=NoSuchGame")
+            self.assertEqual(cm.exception.code, 404)
+
+    def test_launcher_cover_404_when_no_key(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            srv = self.start(tmp)
+            with patch.object(app.engine, "load_api_key", lambda *_: None):
+                with self.assertRaises(urllib.error.HTTPError) as cm:
+                    _get(srv, "/api/launcher-cover?name=Halo")
+            self.assertEqual(cm.exception.code, 404)
+
+
 if __name__ == "__main__":
     unittest.main()
