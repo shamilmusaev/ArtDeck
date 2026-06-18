@@ -182,6 +182,56 @@ class ImportTest(ApiBase):
             names = [e["AppName"] for e in m.values() if isinstance(e, dict)]
             self.assertIn("Cyber Dummy", names)
 
+    def test_import_clears_stale_art_when_download_art_false(self):
+        game = {"name": "Stale Dummy", "exe": "C:\\Games\\StaleDummy.exe",
+                "start_dir": "C:\\Games", "launcher": "epic"}
+        appid = app.engine.game_appid(game)
+        with tempfile.TemporaryDirectory() as tmp:
+            make_account(tmp, "777", [])
+            _, grid = app.engine.account_paths(tmp, "777")
+            os.makedirs(grid, exist_ok=True)
+            # plant a stale cover file in the grid dir
+            cover_file = os.path.join(grid, "%dp.png" % appid)
+            with open(cover_file, "wb") as f:
+                f.write(b"STALE")
+            srv = self.start(tmp)
+            with patch.object(app.engine, "detect_all",
+                              return_value=[{"key": "epic", "label": "Epic Games",
+                                             "games": [dict(game, appid=appid)]}]), \
+                 patch.object(app.engine.steamproc, "is_running", return_value=False):
+                code, body = _post(srv, "/api/import",
+                                   {"account": "777", "appids": [appid],
+                                    "close_steam": False, "download_art": False})
+            self.assertEqual(code, 200)
+            self.assertTrue(json.loads(body)["ok"])
+            # stale cover must be gone
+            self.assertFalse(os.path.isfile(cover_file))
+
+    def test_import_keeps_art_when_download_art_true(self):
+        game = {"name": "Keep Dummy", "exe": "C:\\Games\\KeepDummy.exe",
+                "start_dir": "C:\\Games", "launcher": "epic"}
+        appid = app.engine.game_appid(game)
+        with tempfile.TemporaryDirectory() as tmp:
+            make_account(tmp, "777", [])
+            _, grid = app.engine.account_paths(tmp, "777")
+            os.makedirs(grid, exist_ok=True)
+            # plant a cover file in the grid dir
+            cover_file = os.path.join(grid, "%dp.png" % appid)
+            with open(cover_file, "wb") as f:
+                f.write(b"EXISTING")
+            srv = self.start(tmp)
+            with patch.object(app.engine, "detect_all",
+                              return_value=[{"key": "epic", "label": "Epic Games",
+                                             "games": [dict(game, appid=appid)]}]), \
+                 patch.object(app.engine.steamproc, "is_running", return_value=False):
+                code, body = _post(srv, "/api/import",
+                                   {"account": "777", "appids": [appid],
+                                    "close_steam": False, "download_art": True})
+            self.assertEqual(code, 200)
+            self.assertTrue(json.loads(body)["ok"])
+            # art file must still be present (download_art=true leaves it untouched)
+            self.assertTrue(os.path.isfile(cover_file))
+
 
 class SecurityTest(ApiBase):
     def test_static_traversal_blocked(self):

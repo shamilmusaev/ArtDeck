@@ -536,6 +536,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 except (ValueError, TypeError):
                     return self._err("bad appids", 400)
                 close_steam = bool(data.get("close_steam"))
+                download_art = bool(data.get("download_art", True))
                 if not (uid and STEAM and appids):
                     return self._err("bad", 400)
                 running = engine.steamproc.is_running()
@@ -550,10 +551,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 if running:
                     engine.steamproc.shutdown(STEAM)
                 try:
-                    vdf, _ = engine.account_paths(STEAM, uid)
+                    vdf, grid = engine.account_paths(STEAM, uid)
                     m = engine.read_shortcuts_map(vdf)
                     m, added = engine.append_shortcuts(m, chosen)
                     engine.write_shortcuts(vdf, m)
+                    if not download_art:
+                        # remove stale grid art so the games start clean
+                        for g in chosen:
+                            for art_type in engine.ART_TYPES:
+                                engine.revert_art(grid, g["appid"], art_type)
                 finally:
                     if running:
                         engine.steamproc.launch(STEAM)
