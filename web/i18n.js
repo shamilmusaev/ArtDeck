@@ -100,6 +100,8 @@ const I18N = {
     import_view_grid: "Сетка",
     import_view_list: "Список",
     import_refreshed: "Лаунчеры пересканированы",
+    imported_badge: "Импортировано",
+    imported_customize: "Нажми, чтобы оформить",
   },
 
   en: {
@@ -199,6 +201,8 @@ const I18N = {
     import_view_grid: "Grid view",
     import_view_list: "List view",
     import_refreshed: "Launchers rescanned",
+    imported_badge: "Imported",
+    imported_customize: "Click to customize artwork",
   },
 };
 

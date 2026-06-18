@@ -723,6 +723,7 @@ function renderImportCards(games){
     const cfg = {ar:"2/3", fit:"cover"};
     const {c,w} = cardShell(cfg, i);
     c.classList.add("imp-cover-card");
+    if(!g.imported) c.classList.add("imp-grayscale");
     // cover image — src from /api/launcher-cover?name=...
     const img = el("img"); img.alt = ""; img.style.objectFit = "cover";
     const coverFail = ()=>{ c.classList.remove("loading"); w.innerHTML=""; w.appendChild(el("div","none",GAME_PH)); };
@@ -734,15 +735,22 @@ function renderImportCards(games){
     jget("/api/launcher-cover?name="+enc(g.name)).then(d=>{ if(d && d.thumb){ img.src = d.thumb; } else { coverFail(); } }).catch(coverFail);
     // game name label
     c.appendChild(el("div","imp-cover-nm",escapeHtml(g.name)));
-    // checkbox overlay
-    const cb = el("input"); cb.type = "checkbox"; cb.className = "imp-cb";
-    cb.checked = true; cb.dataset.appid = String(g.appid);
-    cb.addEventListener("change", _updateImportAddLabel);
-    cb.addEventListener("click", e=>e.stopPropagation());
-    const cbWrap = el("label","imp-cb-wrap"); cbWrap.appendChild(cb);
-    c.appendChild(cbWrap);
-    // clicking the card toggles the checkbox
-    c.addEventListener("click", ()=>{ cb.checked = !cb.checked; _updateImportAddLabel(); });
+    if(g.imported){
+      // already in Steam: badge + click opens Artwork customization
+      c.appendChild(el("span","imp-badge",t("imported_badge")));
+      c.style.cursor = "pointer";
+      c.title = t("imported_customize");
+      c.addEventListener("click", ()=>openInArtwork(g));
+    } else {
+      // not yet imported: checkbox overlay; clicking card toggles it
+      const cb = el("input"); cb.type = "checkbox"; cb.className = "imp-cb";
+      cb.checked = true; cb.dataset.appid = String(g.appid);
+      cb.addEventListener("change", _updateImportAddLabel);
+      cb.addEventListener("click", e=>e.stopPropagation());
+      const cbWrap = el("label","imp-cb-wrap"); cbWrap.appendChild(cb);
+      c.appendChild(cbWrap);
+      c.addEventListener("click", ()=>{ cb.checked = !cb.checked; _updateImportAddLabel(); });
+    }
     box.appendChild(c);
   });
   _updateImportAddLabel();
@@ -788,25 +796,52 @@ function renderImportList(games){
     return;
   }
   games.forEach(g=>{
-    const row = el("div","imp-list-row");
+    const row = el("div","imp-list-row"+(g.imported?" imp-list-row--imported":""));
     // thumbnail
-    const thumb = el("div","imp-list-thumb"); thumb.innerHTML = GAME_PH;
+    const thumb = el("div","imp-list-thumb"+(g.imported?"":" imp-grayscale")); thumb.innerHTML = GAME_PH;
     const img = el("img"); img.alt = "";
     img.addEventListener("load", ()=>{ thumb.innerHTML = ""; thumb.appendChild(img); });
     // the endpoint returns JSON {thumb}; fetch it, then load that image URL
     jget("/api/launcher-cover?name="+enc(g.name)).then(d=>{ if(d && d.thumb){ img.src = d.thumb; } }).catch(()=>{});
     // name
     const nm = el("span","imp-list-nm",escapeHtml(g.name));
-    // checkbox
-    const cb = el("input"); cb.type = "checkbox"; cb.className = "imp-cb imp-list-cb";
-    cb.checked = true; cb.dataset.appid = String(g.appid);
-    cb.addEventListener("change", _updateImportAddLabel);
-    cb.addEventListener("click", e=>e.stopPropagation());
-    row.appendChild(thumb); row.appendChild(nm); row.appendChild(cb);
-    row.addEventListener("click", ()=>{ cb.checked = !cb.checked; _updateImportAddLabel(); });
+    row.appendChild(thumb); row.appendChild(nm);
+    if(g.imported){
+      // already in Steam: badge + click opens Artwork customization
+      const badge = el("span","imp-badge imp-badge--list",t("imported_badge"));
+      row.appendChild(badge);
+      row.style.cursor = "pointer";
+      row.title = t("imported_customize");
+      row.addEventListener("click", ()=>openInArtwork(g));
+    } else {
+      // not yet imported: checkbox; clicking row toggles it
+      const cb = el("input"); cb.type = "checkbox"; cb.className = "imp-cb imp-list-cb";
+      cb.checked = true; cb.dataset.appid = String(g.appid);
+      cb.addEventListener("change", _updateImportAddLabel);
+      cb.addEventListener("click", e=>e.stopPropagation());
+      row.appendChild(cb);
+      row.addEventListener("click", ()=>{ cb.checked = !cb.checked; _updateImportAddLabel(); });
+    }
     box.appendChild(row);
   });
   _updateImportAddLabel();
+}
+
+async function openInArtwork(g){
+  setMode("covers");
+  // activate the Non-Steam source tab — mirror the existing .src-tab click handler
+  state.source = "shortcut";
+  document.querySelectorAll(".src-tab").forEach(x=>x.classList.remove("active"));
+  const shortcutTab = document.querySelector(".src-tab[data-src='shortcut']");
+  if(shortcutTab) shortcutTab.classList.add("active");
+  const srcTabs = $("#src-tabs");
+  if(srcTabs) srcTabs.dataset.src = "shortcut";
+  $("#filter").value = "";
+  await loadGames();
+  // prefer the real Steam shortcut appid when available
+  const want = g.steam_appid != null ? g.steam_appid : g.appid;
+  const found = state.games.find(x=>x.appid === want);
+  if(found) selectGame(found, found._row);
 }
 
 function _checkedImportAppids(){
