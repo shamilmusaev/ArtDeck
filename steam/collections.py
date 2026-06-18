@@ -68,11 +68,12 @@ def _parse_pairs(text):
     return data if isinstance(data, list) else []
 
 
-def read_collections(path):
-    """All collections as {id: {"id","name","added","removed"}}, or {} if the
-    file is absent/unparseable. Deleted entries (is_deleted) are skipped."""
-    out = {}
-    for pair in _parse_pairs(_read_text(path)):
+def _iter_collection_pairs(pairs):
+    """Yield (key, entry, coll) for every live collection pair, applying the five
+    structural guards (pair shape, key prefix, non-deleted dict entry, string
+    value, parseable JSON). Shared by read_collections and add_to_collections so
+    the guard logic lives in one place."""
+    for pair in pairs:
         if not (isinstance(pair, list) and len(pair) == 2):
             continue
         key, entry = pair
@@ -87,7 +88,16 @@ def read_collections(path):
             coll = json.loads(value)
         except Exception:
             continue
-        if isinstance(coll, dict) and isinstance(coll.get("id"), str):
+        if isinstance(coll, dict):
+            yield key, entry, coll
+
+
+def read_collections(path):
+    """All collections as {id: {"id","name","added","removed"}}, or {} if the
+    file is absent/unparseable. Deleted entries (is_deleted) are skipped."""
+    out = {}
+    for key, entry, coll in _iter_collection_pairs(_parse_pairs(_read_text(path))):
+        if isinstance(coll.get("id"), str):
             out[coll["id"]] = coll
     return out
 
@@ -185,22 +195,8 @@ def add_to_collections(path, groups, now=None):
 
     # Map collection name -> (key, collection dict) from the existing entries.
     by_name = {}
-    for pair in pairs:
-        if not (isinstance(pair, list) and len(pair) == 2):
-            continue
-        key, entry = pair
-        if not (isinstance(key, str) and key.startswith(_PREFIX)):
-            continue
-        if not isinstance(entry, dict) or entry.get("is_deleted"):
-            continue
-        value = entry.get("value")
-        if not isinstance(value, str):
-            continue
-        try:
-            coll = json.loads(value)
-        except Exception:
-            continue
-        if isinstance(coll, dict) and isinstance(coll.get("name"), str):
+    for key, entry, coll in _iter_collection_pairs(pairs):
+        if isinstance(coll.get("name"), str):
             by_name.setdefault(coll["name"], (key, coll, entry.get("version")))
 
     names_touched = []
