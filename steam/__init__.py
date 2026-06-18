@@ -26,6 +26,10 @@ from steam.icons import steam_game_image, game_icon_path
 from steam.customimage import register_custom_image
 from steam.verify import verify_applied, valid_image
 from steam.official import official_art, official_arts
+from steam.vdf_write import read_shortcuts_map, write_shortcuts
+from steam.shortcuts import append_shortcuts, game_appid
+from steam.launchers import detect_all
+from steam import steamproc
 
 __all__ = [
     "APP_DIR", "find_steam_path", "load_api_key", "save_api_key",
@@ -40,4 +44,6 @@ __all__ = [
     "account_infos", "steam_game_image", "game_icon_path",
     "register_custom_image", "verify_applied", "valid_image",
     "official_art", "official_arts",
+    "read_shortcuts_map", "write_shortcuts", "append_shortcuts", "game_appid",
+    "detect_all", "steamproc",
 ]

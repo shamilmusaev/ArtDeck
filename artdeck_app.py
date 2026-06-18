@@ -259,6 +259,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 webbrowser.open(u2)
                 return self._json({"ok": True})
             return self._err("bad-url", 400)
+        if path == "/api/steam-running":
+            return self._json({"running": engine.steamproc.is_running()})
+        if path == "/api/launchers":
+            acc = q.get("account", [None])[0]
+            if not (acc and STEAM):
+                return self._json({"launchers": []})
+            vdf, _ = engine.account_paths(STEAM, acc)
+            have = {g["appid"] for g in engine.load_shortcuts(vdf)}
+            return self._json({"launchers": engine.detect_all(exclude_appids=have)})
         return self._err("unknown", 404)
 
     def _send_index(self):
@@ -466,6 +475,30 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 val = (data.get("key") or "").strip()
                 engine.save_api_key(val)
                 return self._json({"ok": True, "key_ok": bool(val)})
+            if u.path == "/api/import":
+                uid = data.get("account")
+                appids = set(int(a) for a in data.get("appids", []))
+                close_steam = bool(data.get("close_steam"))
+                if not (uid and STEAM and appids):
+                    return self._err("bad", 400)
+                running = engine.steamproc.is_running()
+                if running and not close_steam:
+                    return self._json({"ok": False, "steam_running": True})
+                # collect the chosen detected games by appid
+                chosen = []
+                for grp in engine.detect_all():
+                    for g in grp["games"]:
+                        if g["appid"] in appids:
+                            chosen.append(g)
+                if running:
+                    engine.steamproc.shutdown(STEAM)
+                vdf, _ = engine.account_paths(STEAM, uid)
+                m = engine.read_shortcuts_map(vdf)
+                m, added = engine.append_shortcuts(m, chosen)
+                engine.write_shortcuts(vdf, m)
+                if running:
+                    engine.steamproc.launch(STEAM)
+                return self._json({"ok": True, "added": added, "relaunched": running})
             return self._err("unknown", 404)
         except Exception:
             return self._err("server error", 500)   # generic: don't leak paths/stack

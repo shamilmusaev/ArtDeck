@@ -160,6 +160,29 @@ class AutofillGuardTest(ApiBase):
         self.assertIn('"type": "done"', body)
 
 
+class ImportTest(ApiBase):
+    def test_import_writes_shortcut(self):
+        game = {"name": "Cyber Dummy", "exe": "C:\\Games\\CyberDummy.exe",
+                "start_dir": "C:\\Games", "launcher": "epic"}
+        appid = app.engine.game_appid(game)
+        with tempfile.TemporaryDirectory() as tmp:
+            make_account(tmp, "777", [])
+            srv = self.start(tmp)
+            with patch.object(app.engine, "detect_all",
+                              return_value=[{"key": "epic", "label": "Epic Games",
+                                             "games": [dict(game, appid=appid)]}]), \
+                 patch.object(app.engine.steamproc, "is_running", return_value=False):
+                code, body = _post(srv, "/api/import",
+                                   {"account": "777", "appids": [appid], "close_steam": False})
+            self.assertEqual(code, 200)
+            d = json.loads(body)
+            self.assertEqual(d, {"ok": True, "added": 1, "relaunched": False})
+            vdf, _ = app.engine.account_paths(tmp, "777")
+            m = app.engine.read_shortcuts_map(vdf)
+            names = [e["AppName"] for e in m.values() if isinstance(e, dict)]
+            self.assertIn("Cyber Dummy", names)
+
+
 class SecurityTest(ApiBase):
     def test_static_traversal_blocked(self):
         with tempfile.TemporaryDirectory() as tmp:
