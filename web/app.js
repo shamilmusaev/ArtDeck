@@ -182,7 +182,7 @@ function closeAcctMenu(){ $("#acct-menu").classList.add("hidden"); $("#acct-btn"
 /* ---------------- game list ---------------- */
 async function refreshGames(){
   const b=$("#btn-refresh"); if(b) b.classList.add("spin");
-  await loadGames(2000);                    // hold the skeleton at least 2s — otherwise the scan flickers
+  await loadGames(null, true);
   if(b) b.classList.remove("spin");
   toast(t("refreshed"),"ok");
 }
@@ -199,22 +199,19 @@ function renderGameSkeletons(){
   }
 }
 
-async function loadGames(minMs=0, preselect=null){
+async function loadGames(preselect=null, immediateSkel=false){
   if(!state.account) return;
   state.selected=null; state.gameId=null;
   $("#grid").innerHTML=""; $("#candidates").classList.add("hidden");
-  // refresh — show the skeleton immediately; a quick switch only if loading takes >160ms
-  // (otherwise the skeleton flashes for an instant when local files read instantly).
+  // show skeleton immediately on refresh; delay 160ms on first open so it doesn't
+  // flash when local files load fast.
   let shown=false;
   const showSkel=()=>{ shown=true; renderGameSkeletons(); };
-  const skelTimer = minMs>0 ? (showSkel(),null) : setTimeout(showSkel,160);
-  const t0=Date.now();
+  const skelTimer = immediateSkel ? (showSkel(),null) : setTimeout(showSkel,160);
   try{
     const d = await jget(`/api/games?account=${enc(state.account)}&source=${state.source}`);
     state.games = d.games||[];
     if(skelTimer) clearTimeout(skelTimer);
-    const wait=minMs-(Date.now()-t0);         // for refresh, hold the skeleton no shorter than minMs (2s)
-    if(wait>0){ if(!shown) showSkel(); await new Promise(r=>setTimeout(r,wait)); }
     renderGames();
     // Defer the auto-select one frame so the list paints first — otherwise
     // a heavy list (e.g. the Installed tab with many games) freezes while
@@ -628,6 +625,14 @@ function _showCoversSidebar(){
   const st = $(".src-tabs"); if(st) st.style.display = "";
 }
 
+function renderImportSkeletons(){
+  const box = $("#import-cards"); if(!box) return;
+  box.classList.remove("list");
+  box.style.setProperty("--card-w", "170px");
+  box.innerHTML = "";
+  for(let i=0; i<10; i++) box.appendChild(skeleton({ar:"2/3"}, i));
+}
+
 async function loadLaunchers(){
   if(!state.account) return;
   // hide covers-mode sidebar elements; show launcher list instead
@@ -646,6 +651,7 @@ async function loadLaunchers(){
     else sidebar.appendChild(lb);
   }
   lb.innerHTML = `<div class="scan-banner"><span class="scan-spin"></span><span>${escapeHtml(t("scanning"))}</span></div>`;
+  renderImportSkeletons();
 
   try{
     const d = await jget("/api/launchers?account="+enc(state.account));
@@ -659,6 +665,7 @@ function renderLaunchers(){
   lb.innerHTML = "";
   if(!state.launchers.length){
     lb.appendChild(el("div","launcher-empty",t("import_no_launchers")));
+    const box = $("#import-cards"); if(box) box.innerHTML = "";
     return;
   }
   const cap = el("div","side-cap launcher-cap");
@@ -740,13 +747,13 @@ function renderImportCards(games){
     // game name label
     c.appendChild(el("div","imp-cover-nm",escapeHtml(g.name)));
     if(g.imported){
-      // already in Steam: badge + explicit Customize button
+      // already in Steam: badge + Customize button (same overlay as artCard)
       c.appendChild(el("span","imp-badge",t("imported_badge")));
-      // quick-customize: prev/next arrows that flip covers without leaving Import
-      _attachQcArrows(c, w, img, g);
-      const custBtn = el("button","imp-customize",t("customize"));
-      custBtn.addEventListener("click", ev=>{ ev.stopPropagation(); openInArtwork(g); });
-      c.appendChild(custBtn);
+      const acts = el("div","card-actions");
+      const cust = el("button","apply",t("customize"));
+      cust.addEventListener("click", ev=>{ ev.stopPropagation(); openInArtwork(g); });
+      acts.appendChild(cust);
+      c.appendChild(acts);
     } else {
       // not yet imported: checkbox overlay; clicking card toggles it
       const cb = el("input"); cb.type = "checkbox"; cb.className = "imp-cb";
@@ -760,76 +767,6 @@ function renderImportCards(games){
     box.appendChild(c);
   });
   _updateImportAddLabel();
-}
-
-// --- quick-customize: arrow buttons on imported cover cards ---
-function _attachQcArrows(card, wrap, img, g){
-  // per-card lazy state — covers fetched once on first arrow press
-  let covers = null;    // null = not yet fetched; [] = fetched, none found
-  let idx = 0;
-  let applyTimer = null;
-
-  const prev = el("button", "qc-arrow qc-prev", "&#8249;");
-  const next = el("button", "qc-arrow qc-next", "&#8250;");
-  prev.title = t("qc_hint");
-  next.title = t("qc_hint");
-
-  function _showCover(){
-    if(!covers || !covers.length) return;
-    idx = ((idx % covers.length) + covers.length) % covers.length;
-    img.src = covers[idx].thumb;
-  }
-
-  function _scheduleApply(){
-    clearTimeout(applyTimer);
-    applyTimer = setTimeout(async ()=>{
-      if(!covers || !covers.length) return;
-      const entry = covers[idx];
-      try{
-        const r = await jpost("/api/apply", {
-          account: state.account,
-          appid: g.steam_appid,
-          type: "cover",
-          url: entry.url,
-        });
-        if(r.ok){
-          card.classList.remove("qc-saved-pulse");
-          // force reflow to restart the animation
-          void card.offsetWidth;
-          card.classList.add("qc-saved-pulse");
-          toast(t("qc_saved"), "ok");
-        } else {
-          toast(t("error") + (r.error || "?"), "bad");
-        }
-      }catch(e){ toast(t("error") + e.message, "bad"); }
-    }, 500);
-  }
-
-  async function _arrowClick(delta, e){
-    e.stopPropagation();
-    if(covers === null){
-      // first press — fetch the cover list
-      prev.disabled = true;
-      next.disabled = true;
-      try{
-        const d = await jget("/api/launcher-covers?name=" + enc(g.name));
-        covers = (d && d.covers) || [];
-      }catch(_){ covers = []; }
-      prev.disabled = false;
-      next.disabled = false;
-      if(!covers.length){ toast(t("qc_none"), "bad"); return; }
-    }
-    if(!covers.length) return;
-    idx += delta;
-    _showCover();
-    _scheduleApply();
-  }
-
-  prev.addEventListener("click", e=>_arrowClick(-1, e));
-  next.addEventListener("click", e=>_arrowClick(+1, e));
-
-  wrap.appendChild(prev);
-  wrap.appendChild(next);
 }
 
 // --- import view: grid / list toggle (F6) ---
@@ -915,7 +852,7 @@ async function openInArtwork(g){
   $("#filter").value = "";
   // prefer the real Steam shortcut appid when available; loadGames auto-selects it
   const want = g.steam_appid != null ? g.steam_appid : g.appid;
-  await loadGames(0, want);
+  await loadGames(want);
 }
 
 function _checkedImportAppids(){
