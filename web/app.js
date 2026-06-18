@@ -631,6 +631,15 @@ function renderImportSkeletons(){
   box.style.setProperty("--card-w", "170px");
   box.innerHTML = "";
   for(let i=0; i<10; i++) box.appendChild(skeleton({ar:"2/3"}, i));
+  _updateImportBar([]);   // nothing to add while scanning
+}
+
+// Show the Download-art + Add-to-Steam bar only when there's something to add
+// (at least one not-yet-imported game in the current view).
+function _updateImportBar(games){
+  const bar = document.querySelector(".import-bar");
+  if(!bar) return;
+  bar.style.display = (games && games.some(g=>!g.imported)) ? "" : "none";
 }
 
 async function loadLaunchers(){
@@ -727,7 +736,7 @@ function renderImportCards(games){
   box.style.setProperty("--card-w", "170px");
   if(!games.length){
     box.appendChild(el("div","import-empty",t("import_no_games")));
-    _updateImportAddLabel();
+    _updateImportAddLabel(); _updateImportBar(games);
     return;
   }
   games.forEach((g,i)=>{
@@ -748,6 +757,7 @@ function renderImportCards(games){
     c.appendChild(el("div","imp-cover-nm",escapeHtml(g.name)));
     if(g.imported){
       // already in Steam: badge + Customize button (same overlay as artCard)
+      c.classList.add("imp-imported");
       c.appendChild(el("span","imp-badge",t("imported_badge")));
       const acts = el("div","card-actions");
       const cust = el("button","apply",t("customize"));
@@ -766,7 +776,7 @@ function renderImportCards(games){
     }
     box.appendChild(c);
   });
-  _updateImportAddLabel();
+  _updateImportAddLabel(); _updateImportBar(games);
 }
 
 // --- import view: grid / list toggle (F6) ---
@@ -805,7 +815,7 @@ function renderImportList(games){
   box.classList.add("list");
   if(!games.length){
     box.appendChild(el("div","import-empty",t("import_no_games")));
-    _updateImportAddLabel();
+    _updateImportAddLabel(); _updateImportBar(games);
     return;
   }
   games.forEach(g=>{
@@ -837,7 +847,7 @@ function renderImportList(games){
     }
     box.appendChild(row);
   });
-  _updateImportAddLabel();
+  _updateImportAddLabel(); _updateImportBar(games);
 }
 
 async function openInArtwork(g){

@@ -503,7 +503,7 @@ body.sidebar-collapsed .game .g-nm{ display:none }
   background-size:200% 100%; animation:sh 1.2s linear infinite;
 }
 @keyframes sh{from{background-position:200% 0} to{background-position:-200% 0}}
-.skeleton{pointer-events:none}
+.skeleton{pointer-events:none; border-color:transparent}
 
 .badge{position:absolute; top:9px; left:9px; z-index:3; padding:3px 8px; border-radius:7px;
   font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
@@ -602,8 +602,10 @@ body.sidebar-collapsed .game .g-nm{ display:none }
   padding:18px 9px 8px; font-size:11.5px; font-weight:600; color:var(--txt);
   background:linear-gradient(transparent,rgba(4,5,8,.85));
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  pointer-events:none;
+  pointer-events:none; transition:opacity .16s ease;
 }
+/* on an imported card, the name yields to the Customize overlay on hover */
+.imp-imported:hover .imp-cover-nm{ opacity:0 }
 .imp-cb-wrap{
   position:absolute; top:8px; left:8px; z-index:4;
   width:22px; height:22px; display:grid; place-items:center;
