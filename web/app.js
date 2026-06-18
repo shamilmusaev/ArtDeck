@@ -657,7 +657,7 @@ async function loadLaunchers(){
     const d = await jget("/api/launchers?account="+enc(state.account));
     state.launchers = d.launchers || [];
     renderLaunchers();
-  }catch(e){ lb.innerHTML = ""; toast(t("error")+e.message,"bad"); }
+  }catch(e){ lb.innerHTML = ""; const ic=$("#import-cards"); if(ic) ic.innerHTML=""; toast(t("error")+e.message,"bad"); }
 }
 
 function renderLaunchers(){
