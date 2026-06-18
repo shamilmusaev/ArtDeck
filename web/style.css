@@ -96,7 +96,6 @@ body.sidebar-collapsed .word{display:none}
 .topbar-spacer{flex:1 1 auto}
 .ctl-search{flex:1 1 auto; min-width:0; display:flex}
 .ctl-search .match-search{flex:1; min-width:200px; max-width:none}
-.ctl-actions{flex:0 0 auto; display:flex; align-items:center; gap:10px}
 
 /* search row below topbar: search full-width, fill/clean to right */
 .search-row{
@@ -654,10 +653,6 @@ body.sidebar-collapsed .game .g-nm{ display:none }
   display:grid; place-items:center; color:var(--dim);
 }
 .launcher-ic svg{ width:18px; height:18px; }
-
-/* toolbar-right: groups anim toggle + action buttons together on the right side */
-.toolbar-right{ display:flex; align-items:center; gap:10px; flex:0 0 auto }
-.toolbar-div{ margin:0 3px }
 
 /* =========================== LIGHTBOX =========================== */
 .light{position:fixed; inset:0; z-index:80; display:grid; place-items:center; padding:32px;
