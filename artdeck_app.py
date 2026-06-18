@@ -270,8 +270,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if not (acc and STEAM):
                 return self._json({"launchers": []})
             vdf, _ = engine.account_paths(STEAM, acc)
-            have = {g["appid"] for g in engine.load_shortcuts(vdf)}
-            return self._json({"launchers": engine.detect_all(exclude_appids=have)})
+            shortcuts = engine.load_shortcuts(vdf)
+            have = {g["appid"] for g in shortcuts}
+            have_exes = {engine.normalize_exe(g["exe"]) for g in shortcuts}
+            return self._json({"launchers": engine.detect_all(exclude_appids=have, exclude_exes=have_exes)})
         if path == "/api/launcher-cover":
             name = q.get("name", [None])[0]
             if not name:

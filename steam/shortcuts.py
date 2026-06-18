@@ -2,8 +2,24 @@
 """Build non-Steam shortcut entries for shortcuts.vdf from detected launcher
 games. The appid is computed the same way Steam (and load_shortcuts) does, from
 the quoted Exe + AppName, so art keyed on it lines up."""
+import os
+
 from steam.library import compute_legacy_appid
 from steam.vdf import get_ci
+
+
+def normalize_exe(s):
+    """Canonical form of an exe path for duplicate detection.
+
+    Strips surrounding double quotes, then applies os.path.normcase and
+    os.path.normpath so paths that differ only in case or separator match.
+    Empty or None input returns an empty string."""
+    if not s:
+        return ""
+    s = s.strip('"')
+    if not s:
+        return ""
+    return os.path.normcase(os.path.normpath(s))
 
 
 def _quote(p):

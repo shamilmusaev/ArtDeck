@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
+import os
 import unittest
 
-from steam.shortcuts import game_appid, build_shortcut_entry, append_shortcuts
+from steam.shortcuts import game_appid, build_shortcut_entry, append_shortcuts, normalize_exe
 
 GAME = {"name": "Game One", "exe": "C:\\g\\one.exe", "start_dir": "C:\\g",
         "launcher": "epic"}
@@ -33,3 +34,31 @@ class ShortcutsTest(unittest.TestCase):
         m, added = append_shortcuts(m, [GAME])
         self.assertEqual(added, 0)
         self.assertEqual(list(m.keys()), ["0"])
+
+
+class NormalizeExeTest(unittest.TestCase):
+    def test_strips_quotes(self):
+        self.assertEqual(normalize_exe('"C:\\Games\\foo.exe"'),
+                         os.path.normcase(os.path.normpath("C:\\Games\\foo.exe")))
+
+    def test_empty_and_none(self):
+        self.assertEqual(normalize_exe(""), "")
+        self.assertEqual(normalize_exe(None), "")
+
+    def test_case_normalised(self):
+        """On Windows normcase folds to lowercase; same path different case must match."""
+        a = normalize_exe("C:\\Games\\Foo.exe")
+        b = normalize_exe("C:\\GAMES\\FOO.EXE")
+        self.assertEqual(a, b)
+
+    def test_separator_normalised(self):
+        """Forward and backward slashes normalise to the same value."""
+        a = normalize_exe("C:\\Games\\foo.exe")
+        b = normalize_exe("C:/Games/foo.exe")
+        self.assertEqual(a, b)
+
+    def test_dotdot_resolved(self):
+        """Redundant components are collapsed."""
+        a = normalize_exe("C:\\Games\\sub\\..\\foo.exe")
+        b = normalize_exe("C:\\Games\\foo.exe")
+        self.assertEqual(a, b)
