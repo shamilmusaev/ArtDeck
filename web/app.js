@@ -745,6 +745,8 @@ function renderImportCards(games){
       c.style.cursor = "pointer";
       c.title = t("imported_customize");
       c.addEventListener("click", ()=>openInArtwork(g));
+      // quick-customize: prev/next arrows that flip covers without leaving Import
+      _attachQcArrows(c, w, img, g);
     } else {
       // not yet imported: checkbox overlay; clicking card toggles it
       const cb = el("input"); cb.type = "checkbox"; cb.className = "imp-cb";
@@ -758,6 +760,76 @@ function renderImportCards(games){
     box.appendChild(c);
   });
   _updateImportAddLabel();
+}
+
+// --- quick-customize: arrow buttons on imported cover cards ---
+function _attachQcArrows(card, wrap, img, g){
+  // per-card lazy state — covers fetched once on first arrow press
+  let covers = null;    // null = not yet fetched; [] = fetched, none found
+  let idx = 0;
+  let applyTimer = null;
+
+  const prev = el("button", "qc-arrow qc-prev", "&#8249;");
+  const next = el("button", "qc-arrow qc-next", "&#8250;");
+  prev.title = t("qc_hint");
+  next.title = t("qc_hint");
+
+  function _showCover(){
+    if(!covers || !covers.length) return;
+    idx = ((idx % covers.length) + covers.length) % covers.length;
+    img.src = covers[idx].thumb;
+  }
+
+  function _scheduleApply(){
+    clearTimeout(applyTimer);
+    applyTimer = setTimeout(async ()=>{
+      if(!covers || !covers.length) return;
+      const entry = covers[idx];
+      try{
+        const r = await jpost("/api/apply", {
+          account: state.account,
+          appid: g.steam_appid,
+          type: "cover",
+          url: entry.url,
+        });
+        if(r.ok){
+          card.classList.remove("qc-saved-pulse");
+          // force reflow to restart the animation
+          void card.offsetWidth;
+          card.classList.add("qc-saved-pulse");
+          toast(t("qc_saved"), "ok");
+        } else {
+          toast(t("error") + (r.error || "?"), "bad");
+        }
+      }catch(e){ toast(t("error") + e.message, "bad"); }
+    }, 500);
+  }
+
+  async function _arrowClick(delta, e){
+    e.stopPropagation();
+    if(covers === null){
+      // first press — fetch the cover list
+      prev.disabled = true;
+      next.disabled = true;
+      try{
+        const d = await jget("/api/launcher-covers?name=" + enc(g.name));
+        covers = (d && d.covers) || [];
+      }catch(_){ covers = []; }
+      prev.disabled = false;
+      next.disabled = false;
+      if(!covers.length){ toast(t("qc_none"), "bad"); return; }
+    }
+    if(!covers.length) return;
+    idx += delta;
+    _showCover();
+    _scheduleApply();
+  }
+
+  prev.addEventListener("click", e=>_arrowClick(-1, e));
+  next.addEventListener("click", e=>_arrowClick(+1, e));
+
+  wrap.appendChild(prev);
+  wrap.appendChild(next);
 }
 
 // --- import view: grid / list toggle (F6) ---

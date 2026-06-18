@@ -708,6 +708,32 @@ body.sidebar-collapsed .launcher-cap{ display:none }
 }
 .imp-list-row--imported:hover{ border-color:rgba(95,200,234,.4) !important }
 
+/* ---- quick-customize: prev/next cover arrows on imported grid cards ---- */
+.qc-arrow{
+  position:absolute; top:50%; z-index:5;
+  width:28px; height:28px; border-radius:50%; border:1px solid rgba(255,255,255,.18);
+  background:rgba(10,12,18,.72); backdrop-filter:blur(4px);
+  display:grid; place-items:center; color:var(--txt);
+  cursor:pointer; font-size:15px; line-height:1;
+  transform:translateY(-50%);
+  opacity:0; transition:opacity .15s ease, background .15s ease, border-color .15s ease;
+}
+.qc-arrow.qc-prev{ left:7px; }
+.qc-arrow.qc-next{ right:7px; }
+.imp-cover-card:hover .qc-arrow{ opacity:1; }
+.qc-arrow:hover{ background:rgba(95,200,234,.22); border-color:rgba(95,200,234,.7); color:var(--coral); }
+.qc-arrow:active{ transform:translateY(-50%) scale(.88); }
+/* while covers are loading (spinner state) disable arrow interaction */
+.qc-arrow[disabled]{ opacity:.3; pointer-events:none; }
+
+/* saved-cue: brief mint pulse on the card border after an apply */
+@keyframes qcsaved{
+  0%{ box-shadow:0 0 0 0 rgba(84,224,199,.0), var(--shadow); border-color:var(--mint); }
+  40%{ box-shadow:0 0 0 4px rgba(84,224,199,.35), var(--shadow); border-color:var(--mint); }
+  100%{ box-shadow:0 0 0 0 rgba(84,224,199,.0), var(--shadow); border-color:var(--line); }
+}
+.qc-saved-pulse{ animation:qcsaved .7s ease forwards; }
+
 /* =========================== LIGHTBOX =========================== */
 .light{position:fixed; inset:0; z-index:80; display:grid; place-items:center; padding:32px;
   background:rgba(5,6,9,.8); backdrop-filter:blur(10px); animation:fade .16s ease}

@@ -102,6 +102,9 @@ const I18N = {
     import_refreshed: "Лаунчеры пересканированы",
     imported_badge: "Импортировано",
     imported_customize: "Нажми, чтобы оформить",
+    qc_saved: "Обложка обновлена",
+    qc_none: "Обложки не найдены",
+    qc_hint: "Быстрая смена обложки",
   },
 
   en: {
@@ -203,6 +206,9 @@ const I18N = {
     import_refreshed: "Launchers rescanned",
     imported_badge: "Imported",
     imported_customize: "Click to customize artwork",
+    qc_saved: "Cover updated",
+    qc_none: "No covers found",
+    qc_hint: "Quick-change cover",
   },
 };
 
