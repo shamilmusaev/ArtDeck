@@ -3,6 +3,7 @@
 
 GOG records each installed game under HKLM\\SOFTWARE\\WOW6432Node\\GOG.com\\Games
 \\<id> with gameName / path / exe. Registry keeps this stdlib-only (no SQLite)."""
+import glob
 import os
 
 GOG_KEY = r"SOFTWARE\WOW6432Node\GOG.com\Games"
@@ -55,5 +56,11 @@ def detect(reader=None):
             continue
         if not os.path.isabs(exe):
             exe = os.path.normpath(os.path.join(path, exe))
+        # Genuine GOG-Galaxy installs always have a goggame-*.info marker file.
+        # Registry entries without this file are phantom/non-GOG entries.
+        if not os.path.isfile(exe):
+            continue
+        if not glob.glob(os.path.join(path, "goggame-*.info")):
+            continue
         games.append({"name": name, "exe": exe, "start_dir": path, "launcher": "gog"})
     return games
