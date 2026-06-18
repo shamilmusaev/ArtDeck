@@ -10,13 +10,16 @@ LAUNCHERS = (
 )
 
 
-def detect_all(exclude_appids=None, exclude_exes=None):
-    """[{"key","label","games":[...]}] for every launcher. Each game gets its
-    unsigned "appid"; games whose appid is in exclude_appids or whose
-    normalize_exe(exe) is in exclude_exes are dropped. A detector that raises
-    contributes an empty list, never aborts the scan."""
-    skip_ids = exclude_appids or set()
-    skip_exes = exclude_exes or set()
+def detect_all(imported_appids=None, exe_to_appid=None):
+    """[{"key","label","games":[...]}] for every launcher. All detected games
+    are returned (none dropped). Each game dict is a copy with its computed
+    unsigned "appid" attached, plus an "imported" bool. When imported is True,
+    "steam_appid" holds the real shortcut appid to use for deep-linking to
+    Artwork (may differ from the computed appid when a game was added via a
+    third-party tool). A detector that raises contributes an empty list, never
+    aborts the scan."""
+    imp_ids = imported_appids or set()
+    exe_map = exe_to_appid or {}
     out = []
     for key, label, fn in LAUNCHERS:
         try:
@@ -25,14 +28,19 @@ def detect_all(exclude_appids=None, exclude_exes=None):
             found = []
         games = []
         for g in found:
-            aid = game_appid(g)
-            if aid in skip_ids:
-                continue
-            ne = normalize_exe(g.get("exe", ""))
-            if ne and ne in skip_exes:
-                continue
             g = dict(g)
+            aid = game_appid(g)
             g["appid"] = aid
+            ne = normalize_exe(g.get("exe", ""))
+            if aid in imp_ids:
+                g["imported"] = True
+                g["steam_appid"] = aid
+            elif ne and ne in exe_map:
+                g["imported"] = True
+                g["steam_appid"] = exe_map[ne]
+            else:
+                g["imported"] = False
+                g["steam_appid"] = None
             games.append(g)
         out.append({"key": key, "label": label, "games": games})
     return out
