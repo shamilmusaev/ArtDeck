@@ -49,7 +49,7 @@ class IconsTest(unittest.TestCase):
 
     def test_game_icon_path_dispatch(self):
         with tempfile.TemporaryDirectory() as tmp:
-            # non-Steam: use the shortcut's icon file if it exists
+            # non-Steam, no grid: use the shortcut's icon file if it's an image
             ico = os.path.join(tmp, "alien.ico")
             open(ico, "wb").close()
             shortcut = {"kind": "shortcut", "appid": 2468090731, "icon": ico}
@@ -62,6 +62,54 @@ class IconsTest(unittest.TestCase):
             open(os.path.join(d, "logo.png"), "wb").close()
             steam_g = {"kind": "steam", "appid": 431960, "icon": ""}
             self.assertTrue(game_icon_path(tmp, steam_g).endswith("logo.png"))
+
+    def test_grid_icon_beats_shortcut_field(self):
+        # The real icon Steam shows (grid/<appid>_icon.png) wins over the `icon` field.
+        with tempfile.TemporaryDirectory() as tmp:
+            grid = os.path.join(tmp, "grid")
+            os.makedirs(grid)
+            grid_icon = os.path.join(grid, "2539609011_icon.png")
+            open(grid_icon, "wb").close()
+            field = os.path.join(tmp, "shortcut.ico")
+            open(field, "wb").close()
+            g = {"kind": "shortcut", "appid": 2539609011, "icon": field}
+            self.assertEqual(game_icon_path(tmp, g, grid), grid_icon)
+
+    def test_exe_icon_field_is_skipped(self):
+        # An `icon` field pointing at a .exe can't be rendered; fall through it.
+        with tempfile.TemporaryDirectory() as tmp:
+            grid = os.path.join(tmp, "grid")
+            os.makedirs(grid)
+            exe = os.path.join(tmp, "AI.exe")
+            open(exe, "wb").close()
+            g = {"kind": "shortcut", "appid": 2539609011, "icon": exe}
+            # nothing usable in grid -> None (not the .exe)
+            self.assertIsNone(game_icon_path(tmp, g, grid))
+            # but a real grid icon is used
+            grid_icon = os.path.join(grid, "2539609011_icon.png")
+            open(grid_icon, "wb").close()
+            self.assertEqual(game_icon_path(tmp, g, grid), grid_icon)
+
+    def test_cover_fallback_when_no_icon(self):
+        # No icon field, no grid icon -> fall back to the cover so the row isn't blank.
+        with tempfile.TemporaryDirectory() as tmp:
+            grid = os.path.join(tmp, "grid")
+            os.makedirs(grid)
+            cover = os.path.join(grid, "2400673996p.png")
+            open(cover, "wb").close()
+            g = {"kind": "shortcut", "appid": 2400673996, "icon": ""}
+            self.assertEqual(game_icon_path(tmp, g, grid), cover)
+
+    def test_real_icon_beats_cover_fallback(self):
+        # When both a real icon and a cover exist in grid, the icon wins.
+        with tempfile.TemporaryDirectory() as tmp:
+            grid = os.path.join(tmp, "grid")
+            os.makedirs(grid)
+            open(os.path.join(grid, "777p.png"), "wb").close()
+            grid_icon = os.path.join(grid, "777_icon.png")
+            open(grid_icon, "wb").close()
+            g = {"kind": "shortcut", "appid": 777, "icon": ""}
+            self.assertEqual(game_icon_path(tmp, g, grid), grid_icon)
 
 
 if __name__ == "__main__":

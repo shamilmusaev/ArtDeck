@@ -311,10 +311,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
         """Icon path for a game: a non-Steam shortcut's own icon, else the Steam
         librarycache image. A list render fires one request per row, so the parsed
         shortcuts.vdf is cached (by path+mtime) to avoid re-parsing it N times."""
-        vdf, _ = engine.account_paths(STEAM, uid)
+        vdf, grid = engine.account_paths(STEAM, uid)
         g = _shortcuts_index(vdf).get(appid)
         if g is not None:
-            return engine.game_icon_path(STEAM, g)
+            return engine.game_icon_path(STEAM, g, grid)
         return engine.steam_game_image(STEAM, appid)
 
     def _serve_gameicon(self, q):
