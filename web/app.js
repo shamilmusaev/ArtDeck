@@ -725,11 +725,13 @@ function renderImportCards(games){
     c.classList.add("imp-cover-card");
     // cover image — src from /api/launcher-cover?name=...
     const img = el("img"); img.alt = ""; img.style.objectFit = "cover";
+    const coverFail = ()=>{ c.classList.remove("loading"); w.innerHTML=""; w.appendChild(el("div","none",GAME_PH)); };
     img.addEventListener("load", ()=>c.classList.remove("loading"));
-    img.addEventListener("error", ()=>{ c.classList.remove("loading"); w.innerHTML=""; w.appendChild(el("div","none",GAME_PH)); });
-    img.src = "/api/launcher-cover?name="+enc(g.name);
+    img.addEventListener("error", coverFail);
     c.classList.add("loading");
     w.appendChild(img);
+    // the endpoint returns JSON {thumb}; fetch it, then load that image URL
+    jget("/api/launcher-cover?name="+enc(g.name)).then(d=>{ if(d && d.thumb){ img.src = d.thumb; } else { coverFail(); } }).catch(coverFail);
     // game name label
     c.appendChild(el("div","imp-cover-nm",escapeHtml(g.name)));
     // checkbox overlay
@@ -791,7 +793,8 @@ function renderImportList(games){
     const thumb = el("div","imp-list-thumb"); thumb.innerHTML = GAME_PH;
     const img = el("img"); img.alt = "";
     img.addEventListener("load", ()=>{ thumb.innerHTML = ""; thumb.appendChild(img); });
-    img.src = "/api/launcher-cover?name="+enc(g.name);
+    // the endpoint returns JSON {thumb}; fetch it, then load that image URL
+    jget("/api/launcher-cover?name="+enc(g.name)).then(d=>{ if(d && d.thumb){ img.src = d.thumb; } }).catch(()=>{});
     // name
     const nm = el("span","imp-list-nm",escapeHtml(g.name));
     // checkbox
