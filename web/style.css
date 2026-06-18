@@ -592,18 +592,8 @@ body.sidebar-collapsed .game .g-nm{ display:none }
   grid-column:1/-1;
 }
 /* keep legacy imp-card/imp-cb/imp-ic/imp-nm styles for stale references */
-.imp-card{
-  display:flex; align-items:center; gap:11px; padding:8px 10px; border-radius:10px;
-  border:1px solid transparent; transition:.13s ease; cursor:pointer;
-}
-.imp-card:hover{ background:var(--ink-3); border-color:var(--line-2) }
 .imp-cb{
   width:16px; height:16px; flex:0 0 auto; accent-color:var(--coral); cursor:pointer;
-}
-.imp-ic{ width:30px; height:30px; flex:0 0 auto }
-.imp-nm{
-  flex:1; min-width:0; font-size:13.5px; font-weight:500;
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 .imp-cover-nm{
   position:absolute; left:0; right:0; bottom:0; z-index:3;

@@ -60,7 +60,7 @@ def detect(reader=None):
         # Registry entries without this file are phantom/non-GOG entries.
         if not os.path.isfile(exe):
             continue
-        if not glob.glob(os.path.join(path, "goggame-*.info")):
+        if not glob.glob(os.path.join(glob.escape(path), "goggame-*.info")):
             continue
         games.append({"name": name, "exe": exe, "start_dir": path, "launcher": "gog"})
     return games
