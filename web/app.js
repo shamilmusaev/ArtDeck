@@ -727,6 +727,16 @@ function selectLauncher(lau){
   renderImportCards(lau.games || []);
 }
 
+function _importHint(isList){
+  const lau = state.launchers.find(l=>l.key===state.activeLauncher);
+  const text = t("import_hint").replace("%s", lau ? lau.label : "");
+  const node = el("div", isList ? "imp-hint-row" : "imp-hint-card");
+  node.appendChild(el("span","imp-hint-ic",
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>`));
+  node.appendChild(el("span","imp-hint-text", escapeHtml(text)));
+  return node;
+}
+
 function renderImportCards(games){
   _importGames = games;
   // respect the persisted view preference
@@ -735,7 +745,7 @@ function renderImportCards(games){
   box.classList.remove("list");
   box.style.setProperty("--card-w", "170px");
   if(!games.length){
-    box.appendChild(el("div","import-empty",t("import_no_games")));
+    box.appendChild(_importHint(false));
     _updateImportAddLabel(); _updateImportBar(games);
     return;
   }
@@ -776,6 +786,7 @@ function renderImportCards(games){
     }
     box.appendChild(c);
   });
+  box.appendChild(_importHint(false));
   _updateImportAddLabel(); _updateImportBar(games);
 }
 
@@ -814,7 +825,7 @@ function renderImportList(games){
   const box = $("#import-cards"); box.innerHTML = "";
   box.classList.add("list");
   if(!games.length){
-    box.appendChild(el("div","import-empty",t("import_no_games")));
+    box.appendChild(_importHint(true));
     _updateImportAddLabel(); _updateImportBar(games);
     return;
   }
@@ -847,6 +858,7 @@ function renderImportList(games){
     }
     box.appendChild(row);
   });
+  box.appendChild(_importHint(true));
   _updateImportAddLabel(); _updateImportBar(games);
 }
 

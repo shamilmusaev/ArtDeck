@@ -100,7 +100,8 @@ const I18N = {
     import_view_grid: "Сетка",
     import_view_list: "Список",
     import_refreshed: "Лаунчеры пересканированы",
-    imported_badge: "Импортировано",
+    imported_badge: "В Steam",
+    import_hint: "Установите игры в %s — и они появятся здесь",
     customize: "Оформить",
   },
 
@@ -201,7 +202,8 @@ const I18N = {
     import_view_grid: "Grid view",
     import_view_list: "List view",
     import_refreshed: "Launchers rescanned",
-    imported_badge: "Imported",
+    imported_badge: "In Steam",
+    import_hint: "Install games in %s and they'll appear here",
     customize: "Customize",
   },
 };
