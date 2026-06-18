@@ -661,9 +661,10 @@ function renderLaunchers(){
   state.launchers.forEach(lau=>{
     const row = el("div","launcher-row"+(state.activeLauncher===lau.key?" active":""));
     row.title = lau.label;
+    const ic = el("span","launcher-ic"); ic.innerHTML = _launcherIcon(lau.key);
     const nm = el("span","launcher-nm",escapeHtml(lau.label));
     const cnt = el("span","launcher-cnt",String((lau.games||[]).length));
-    row.appendChild(nm); row.appendChild(cnt);
+    row.appendChild(ic); row.appendChild(nm); row.appendChild(cnt);
     row.addEventListener("click", ()=>selectLauncher(lau));
     lb.appendChild(row);
   });
@@ -671,6 +672,13 @@ function renderLaunchers(){
   if(state.launchers.length && !state.activeLauncher){
     selectLauncher(state.launchers[0]);
   }
+}
+
+function _launcherIcon(key){
+  const s = (body)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+  if(key === "epic") return s(`<polygon points="12,2 22,12 12,22 2,12"/><path d="M8 12h8M8 8h6M8 16h6"/>`);
+  if(key === "gog")  return s(`<circle cx="12" cy="12" r="9"/><path d="M16 12h-4v4"/>`);
+  return s(`<rect x="4" y="4" width="16" height="16" rx="3"/>`);
 }
 
 function selectLauncher(lau){
@@ -684,24 +692,35 @@ function selectLauncher(lau){
 
 function renderImportCards(games){
   const box = $("#import-cards"); box.innerHTML = "";
+  box.style.setProperty("--card-w", "170px");
   if(!games.length){
     box.appendChild(el("div","import-empty",t("import_no_games")));
     _updateImportAddLabel();
     return;
   }
-  games.forEach(g=>{
-    const card = el("div","imp-card");
-    const cb = el("input"); cb.type = "checkbox"; cb.className = "imp-cb"; cb.checked = true;
-    cb.dataset.appid = String(g.appid);
+  games.forEach((g,i)=>{
+    const cfg = {ar:"2/3", fit:"cover"};
+    const {c,w} = cardShell(cfg, i);
+    c.classList.add("imp-cover-card");
+    // cover image — src from /api/launcher-cover?name=...
+    const img = el("img"); img.alt = ""; img.style.objectFit = "cover";
+    img.addEventListener("load", ()=>c.classList.remove("loading"));
+    img.addEventListener("error", ()=>{ c.classList.remove("loading"); w.innerHTML=""; w.appendChild(el("div","none",GAME_PH)); });
+    img.src = "/api/launcher-cover?name="+enc(g.name);
+    c.classList.add("loading");
+    w.appendChild(img);
+    // game name label
+    c.appendChild(el("div","imp-cover-nm",escapeHtml(g.name)));
+    // checkbox overlay
+    const cb = el("input"); cb.type = "checkbox"; cb.className = "imp-cb";
+    cb.checked = true; cb.dataset.appid = String(g.appid);
     cb.addEventListener("change", _updateImportAddLabel);
-    const ic = el("span","g-ic imp-ic",GAME_PH);
-    const img = el("img"); img.alt = "";
-    img.addEventListener("load", ()=>{ ic.innerHTML = ""; ic.appendChild(img); });
-    img.src = "/api/gameicon?account="+enc(state.account)+"&appid="+enc(String(g.appid));
-    ic.appendChild(img);
-    const nm = el("span","imp-nm",escapeHtml(g.name));
-    card.appendChild(cb); card.appendChild(ic); card.appendChild(nm);
-    box.appendChild(card);
+    cb.addEventListener("click", e=>e.stopPropagation());
+    const cbWrap = el("label","imp-cb-wrap"); cbWrap.appendChild(cb);
+    c.appendChild(cbWrap);
+    // clicking the card toggles the checkbox
+    c.addEventListener("click", ()=>{ cb.checked = !cb.checked; _updateImportAddLabel(); });
+    box.appendChild(c);
   });
   _updateImportAddLabel();
 }
