@@ -28,7 +28,8 @@ def detect_all(exclude_appids=None, exclude_exes=None):
             aid = game_appid(g)
             if aid in skip_ids:
                 continue
-            if normalize_exe(g.get("exe", "")) in skip_exes:
+            ne = normalize_exe(g.get("exe", ""))
+            if ne and ne in skip_exes:
                 continue
             g = dict(g)
             g["appid"] = aid

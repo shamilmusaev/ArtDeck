@@ -684,9 +684,6 @@ body.sidebar-collapsed .launcher-cap{ display:none }
 .imp-list-nm{ flex:1; min-width:0; font-size:13.5px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
 .imp-list-cb{ flex:0 0 auto; width:16px; height:16px; accent-color:var(--coral); cursor:pointer }
 
-/* import-art toggle: accent when checked */
-.import-art-toggle input:checked ~ .anim-lbl{ color:var(--txt) }
-
 /* =========================== LIGHTBOX =========================== */
 .light{position:fixed; inset:0; z-index:80; display:grid; place-items:center; padding:32px;
   background:rgba(5,6,9,.8); backdrop-filter:blur(10px); animation:fade .16s ease}
