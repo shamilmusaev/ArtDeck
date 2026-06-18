@@ -199,7 +199,7 @@ function renderGameSkeletons(){
   }
 }
 
-async function loadGames(minMs=0){
+async function loadGames(minMs=0, preselect=null){
   if(!state.account) return;
   state.selected=null; state.gameId=null;
   $("#grid").innerHTML=""; $("#candidates").classList.add("hidden");
@@ -220,6 +220,10 @@ async function loadGames(minMs=0){
     // a heavy list (e.g. the Installed tab with many games) freezes while
     // the click handler runs search + ambient in the same task.
     requestAnimationFrame(()=>{
+      if(preselect!=null){
+        const g=state.games.find(x=>x.appid===preselect);
+        if(g && g._row){ g._row.click(); return; }
+      }
       const first=document.querySelector("#games .game");
       if(first) first.click();
     });
@@ -837,11 +841,9 @@ async function openInArtwork(g){
   const srcTabs = $("#src-tabs");
   if(srcTabs) srcTabs.dataset.src = "shortcut";
   $("#filter").value = "";
-  await loadGames();
-  // prefer the real Steam shortcut appid when available
+  // prefer the real Steam shortcut appid when available; loadGames auto-selects it
   const want = g.steam_appid != null ? g.steam_appid : g.appid;
-  const found = state.games.find(x=>x.appid === want);
-  if(found) selectGame(found, found._row);
+  await loadGames(0, want);
 }
 
 function _checkedImportAppids(){
