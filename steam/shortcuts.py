@@ -11,12 +11,21 @@ from steam.vdf import get_ci
 def normalize_exe(s):
     """Canonical form of an exe path for duplicate detection.
 
-    Strips surrounding double quotes, then applies os.path.normcase and
-    os.path.normpath so paths that differ only in case or separator match.
-    Empty or None input returns an empty string."""
+    Steam stores Exe as a quoted path that may be followed by launch arguments
+    (e.g. '"C:\\Game\\g.exe" --launch'); take just the path inside the first
+    quote pair so it matches a detector's bare exe path. Then os.path.normcase +
+    os.path.normpath so paths differing only in case or separator match. An
+    unquoted path may legitimately contain spaces, so we never split on
+    whitespace. Empty or None input returns an empty string."""
     if not s:
         return ""
-    s = s.strip('"')
+    s = s.strip()
+    if s.startswith('"'):
+        end = s.find('"', 1)
+        if end != -1:
+            s = s[1:end]
+    else:
+        s = s.strip('"')
     if not s:
         return ""
     return os.path.normcase(os.path.normpath(s))

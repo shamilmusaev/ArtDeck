@@ -17,6 +17,12 @@ All notable changes to ArtDeck are documented here. The format is based on
 
 ### Fixed
 
+- Import no longer silently loses games when Steam refuses to close. If the
+  shutdown does not complete, the import is aborted before writing (Steam would
+  otherwise overwrite the new shortcuts on its own exit) and a clear message asks
+  you to close Steam and retry.
+- Selecting games to import now survives switching launcher tabs — checked games
+  in one launcher are remembered when you move to another and back.
 - Non-Steam game icons now show in the sidebar. They are resolved from the Steam
   `grid` folder, by extracting the icon from the game's `.exe`, or by falling back
   to cover art — previously only the shortcut's `icon` field was used, which often

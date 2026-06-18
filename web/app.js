@@ -25,6 +25,9 @@ const state = {
   type:"cover", animated:false, candidates:[], selectedArt:null,
   reqToken:0, searchToken:0, keyOk:false,
   mode:"covers", launchers:[], activeLauncher:null,
+  // import selection, kept in state (not read from the DOM) so checks survive
+  // switching launcher tabs, which re-renders #import-cards
+  importChecked:null, importSeen:null,
 };
 
 const $  = s=>document.querySelector(s);
@@ -644,6 +647,9 @@ function _updateImportBar(games){
 
 async function loadLaunchers(){
   if(!state.account) return;
+  // a fresh scan resets the cross-launcher selection (games default to checked)
+  state.importChecked = new Set();
+  state.importSeen = new Set();
   // hide covers-mode sidebar elements; show launcher list instead
   const sc = $(".side-cap"); if(sc) sc.style.display = "none";
   const gl = $("#games"); if(gl) gl.style.display = "none";
@@ -761,8 +767,15 @@ function renderImportCards(games){
     img.addEventListener("error", coverFail);
     c.classList.add("loading");
     w.appendChild(img);
-    // the endpoint returns JSON {thumb}; fetch it, then load that image URL
-    jget("/api/launcher-cover?name="+enc(g.name)).then(d=>{ if(d && d.thumb){ img.src = d.thumb; } else { coverFail(); } }).catch(coverFail);
+    // the endpoint returns JSON {thumb}; fetch it once, then cache the result on
+    // the game so re-render / view-switch reuses it instead of refetching
+    if(g._thumb){ img.src = g._thumb; }
+    else if(g._thumb === null){ coverFail(); }
+    else {
+      jget("/api/launcher-cover?name="+enc(g.name))
+        .then(d=>{ if(d && d.thumb){ g._thumb = d.thumb; img.src = d.thumb; } else { g._thumb = null; coverFail(); } })
+        .catch(()=>{ g._thumb = null; coverFail(); });
+    }
     // game name label
     c.appendChild(el("div","imp-cover-nm",escapeHtml(g.name)));
     if(g.imported){
@@ -776,13 +789,14 @@ function renderImportCards(games){
       c.appendChild(acts);
     } else {
       // not yet imported: checkbox overlay; clicking card toggles it
+      const aid = String(g.appid); _seedImportCheck(aid);
       const cb = el("input"); cb.type = "checkbox"; cb.className = "imp-cb";
-      cb.checked = true; cb.dataset.appid = String(g.appid);
-      cb.addEventListener("change", _updateImportAddLabel);
+      cb.checked = state.importChecked.has(aid); cb.dataset.appid = aid;
+      cb.addEventListener("change", ()=>_setImportCheck(aid, cb.checked));
       cb.addEventListener("click", e=>e.stopPropagation());
       const cbWrap = el("label","imp-cb-wrap"); cbWrap.appendChild(cb);
       c.appendChild(cbWrap);
-      c.addEventListener("click", ()=>{ cb.checked = !cb.checked; _updateImportAddLabel(); });
+      c.addEventListener("click", ()=>{ cb.checked = !cb.checked; _setImportCheck(aid, cb.checked); });
     }
     box.appendChild(c);
   });
@@ -835,8 +849,13 @@ function renderImportList(games){
     const thumb = el("div","imp-list-thumb"+(g.imported?"":" imp-grayscale")); thumb.innerHTML = GAME_PH;
     const img = el("img"); img.alt = "";
     img.addEventListener("load", ()=>{ thumb.innerHTML = ""; thumb.appendChild(img); });
-    // the endpoint returns JSON {thumb}; fetch it, then load that image URL
-    jget("/api/launcher-cover?name="+enc(g.name)).then(d=>{ if(d && d.thumb){ img.src = d.thumb; } }).catch(()=>{});
+    // fetch the cover once, then reuse the cached thumb on re-render / view-switch
+    if(g._thumb){ img.src = g._thumb; }
+    else if(g._thumb === undefined){
+      jget("/api/launcher-cover?name="+enc(g.name))
+        .then(d=>{ if(d && d.thumb){ g._thumb = d.thumb; img.src = d.thumb; } else { g._thumb = null; } })
+        .catch(()=>{ g._thumb = null; });
+    }
     // name
     const nm = el("span","imp-list-nm",escapeHtml(g.name));
     row.appendChild(thumb); row.appendChild(nm);
@@ -849,12 +868,13 @@ function renderImportList(games){
       row.appendChild(custBtn);
     } else {
       // not yet imported: checkbox; clicking row toggles it
+      const aid = String(g.appid); _seedImportCheck(aid);
       const cb = el("input"); cb.type = "checkbox"; cb.className = "imp-cb imp-list-cb";
-      cb.checked = true; cb.dataset.appid = String(g.appid);
-      cb.addEventListener("change", _updateImportAddLabel);
+      cb.checked = state.importChecked.has(aid); cb.dataset.appid = aid;
+      cb.addEventListener("change", ()=>_setImportCheck(aid, cb.checked));
       cb.addEventListener("click", e=>e.stopPropagation());
       row.appendChild(cb);
-      row.addEventListener("click", ()=>{ cb.checked = !cb.checked; _updateImportAddLabel(); });
+      row.addEventListener("click", ()=>{ cb.checked = !cb.checked; _setImportCheck(aid, cb.checked); });
     }
     box.appendChild(row);
   });
@@ -878,7 +898,20 @@ async function openInArtwork(g){
 }
 
 function _checkedImportAppids(){
-  return [...document.querySelectorAll(".imp-cb:checked")].map(cb=>cb.dataset.appid);
+  return state.importChecked ? [...state.importChecked] : [];
+}
+
+// default-check a not-yet-imported game the first time it is rendered, so the
+// selection state is seeded once and then driven by the user
+function _seedImportCheck(appid){
+  if(!state.importSeen) { state.importSeen = new Set(); state.importChecked = new Set(); }
+  if(!state.importSeen.has(appid)){ state.importSeen.add(appid); state.importChecked.add(appid); }
+}
+
+function _setImportCheck(appid, checked){
+  if(!state.importChecked) state.importChecked = new Set();
+  if(checked) state.importChecked.add(appid); else state.importChecked.delete(appid);
+  _updateImportAddLabel();
 }
 
 function _updateImportAddLabel(){
@@ -961,6 +994,11 @@ async function _runImport(appids, opts){
       const confirmed = await _confirmDialog(t("import_close_steam"));
       if(!confirmed) return;
       res = await jpost("/api/import", Object.assign({}, body, {close_steam:true}));
+    }
+    if(!res.ok && res.steam_open){
+      // Steam would not close; the server aborted so nothing was written
+      toast(t("import_steam_stuck"), "bad");
+      return;
     }
     if(res.ok){
       toast(t("import_done").replace("%d", String(res.added)), "ok");

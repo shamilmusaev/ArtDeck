@@ -38,6 +38,12 @@ _SHORTCUTS_CACHE = {}
 # Values are either {"thumb": url} or None (no match / error).
 _LAUNCHER_COVER_CACHE = {}
 
+# Last /api/launchers scan per account, so /api/import operates on exactly what
+# the UI showed instead of re-running the full launcher detection (which both
+# doubles the disk/registry/sqlite work and risks a TOCTOU mismatch if the
+# library changed between the GET and the import POST).
+_DETECT_CACHE = {}
+
 
 def _shortcuts_index(vdf):
     try:
@@ -274,8 +280,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             imported_appids = {g["appid"] for g in shortcuts}
             exe_to_appid = {engine.normalize_exe(g["exe"]): g["appid"]
                             for g in shortcuts if g.get("exe")}
-            return self._json({"launchers": engine.detect_all(
-                imported_appids=imported_appids, exe_to_appid=exe_to_appid)})
+            launchers = engine.detect_all(
+                imported_appids=imported_appids, exe_to_appid=exe_to_appid)
+            _DETECT_CACHE[acc] = launchers
+            return self._json({"launchers": launchers})
         if path == "/api/collections":
             # existing collection names, to suggest in the import dialog (read-only)
             acc = q.get("account", [None])[0]
@@ -524,25 +532,36 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 download_art = bool(data.get("download_art", True))
                 add_to_collection = bool(data.get("add_to_collection"))
                 collection_name = (data.get("collection_name") or "").strip()
-                if not (uid and STEAM and appids):
+                # reject a non-numeric account before touching Steam, matching the
+                # read endpoints - account_paths would raise later, but only after
+                # we had needlessly shut Steam down on a malformed request
+                if not (uid and STEAM and appids and str(uid).isdigit()):
                     return self._err("bad", 400)
                 running = engine.steamproc.is_running()
                 if running and not close_steam:
                     return self._json({"ok": False, "steam_running": True})
-                # collect the chosen detected games by appid, grouped by launcher
+                # collect the chosen detected games by appid, grouped by launcher.
+                # Reuse the last /api/launchers scan (what the UI showed) so we do
+                # not re-scan every launcher a second time per import.
                 chosen = []
                 groups = {}
-                for grp in engine.detect_all():
+                for grp in (_DETECT_CACHE.get(uid) or engine.detect_all()):
                     for g in grp["games"]:
                         if g["appid"] in appids:
                             chosen.append(g)
+                            # the appid is unsigned (matches grid art filenames and
+                            # Steam's collection store); shortcuts.vdf stores it
+                            # signed, but collections want the unsigned form
                             groups.setdefault(grp["label"], []).append(g["appid"])
                 # an explicit name puts every chosen game in that one collection;
                 # otherwise each launcher gets its own (named after the launcher)
                 if collection_name:
                     groups = {collection_name: [g["appid"] for g in chosen]}
-                if running:
-                    engine.steamproc.shutdown(STEAM)
+                if running and not engine.steamproc.shutdown(STEAM):
+                    # Steam refused to close in time. Writing shortcuts.vdf now
+                    # would be clobbered when Steam later exits (it keeps an
+                    # in-memory copy), so abort cleanly without touching anything.
+                    return self._json({"ok": False, "steam_open": True})
                 collections = None
                 try:
                     vdf, grid = engine.account_paths(STEAM, uid)
@@ -550,10 +569,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     m, added = engine.append_shortcuts(m, chosen)
                     engine.write_shortcuts(vdf, m)
                     if not download_art:
-                        # remove stale grid art so the games start clean
+                        # remove stale grid art so the games start clean; skip one
+                        # game on error rather than aborting the whole import
                         for g in chosen:
                             for art_type in engine.ART_TYPES:
-                                engine.revert_art(grid, g["appid"], art_type)
+                                try:
+                                    engine.revert_art(grid, g["appid"], art_type)
+                                except Exception:
+                                    pass
                     if add_to_collection and groups:
                         # Steam is closed here, so the surgical collections write
                         # survives; relaunch happens after in finally.

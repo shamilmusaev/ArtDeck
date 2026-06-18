@@ -62,3 +62,10 @@ class NormalizeExeTest(unittest.TestCase):
         a = normalize_exe("C:\\Games\\sub\\..\\foo.exe")
         b = normalize_exe("C:\\Games\\foo.exe")
         self.assertEqual(a, b)
+
+    def test_strips_launch_args(self):
+        """A quoted Exe with trailing launch args matches the bare exe path, so a
+        shortcut like '"C:\\g\\foo.exe" --launch' is seen as the same game."""
+        a = normalize_exe('"C:\\Games\\foo.exe" --launch -opengl')
+        b = normalize_exe("C:\\Games\\foo.exe")
+        self.assertEqual(a, b)

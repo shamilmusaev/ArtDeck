@@ -161,6 +161,11 @@ class AutofillGuardTest(ApiBase):
 
 
 class ImportTest(ApiBase):
+    def setUp(self):
+        # the import handler reuses the last /api/launchers scan; clear it so each
+        # test's patched detect_all is what gets used
+        app._DETECT_CACHE.clear()
+
     def test_import_writes_shortcut(self):
         game = {"name": "Cyber Dummy", "exe": "C:\\Games\\CyberDummy.exe",
                 "start_dir": "C:\\Games", "launcher": "epic"}
@@ -182,6 +187,82 @@ class ImportTest(ApiBase):
             m = app.engine.read_shortcuts_map(vdf)
             names = [e["AppName"] for e in m.values() if isinstance(e, dict)]
             self.assertIn("Cyber Dummy", names)
+
+    def test_import_rejects_non_numeric_account_before_closing_steam(self):
+        # a malformed account must be rejected up front, never after Steam was
+        # needlessly shut down
+        with tempfile.TemporaryDirectory() as tmp:
+            make_account(tmp, "777", [])
+            srv = self.start(tmp)
+            with patch.object(app.engine.steamproc, "is_running",
+                              return_value=True) as is_running, \
+                 patch.object(app.engine.steamproc, "shutdown") as shutdown:
+                with self.assertRaises(urllib.error.HTTPError) as cm:
+                    _post(srv, "/api/import",
+                          {"account": "../evil", "appids": [123],
+                           "close_steam": True})
+            self.assertEqual(cm.exception.code, 400)
+            self.assertFalse(shutdown.called)   # Steam was never touched
+            self.assertFalse(is_running.called)
+
+    def test_import_aborts_when_steam_will_not_close(self):
+        # shutdown() returning False means Steam is still up; writing shortcuts.vdf
+        # now would be clobbered, so the handler must abort without writing
+        game = {"name": "Cyber Dummy", "exe": "C:\\Games\\CyberDummy.exe",
+                "start_dir": "C:\\Games", "launcher": "epic"}
+        appid = app.engine.game_appid(game)
+        with tempfile.TemporaryDirectory() as tmp:
+            make_account(tmp, "777", [])
+            srv = self.start(tmp)
+            with patch.object(app.engine, "detect_all",
+                              return_value=[{"key": "epic", "label": "Epic Games",
+                                             "games": [dict(game, appid=appid)]}]), \
+                 patch.object(app.engine.steamproc, "is_running", return_value=True), \
+                 patch.object(app.engine.steamproc, "shutdown", return_value=False), \
+                 patch.object(app.engine.steamproc, "launch") as launch:
+                code, body = _post(srv, "/api/import",
+                                   {"account": "777", "appids": [appid],
+                                    "close_steam": True})
+            self.assertEqual(code, 200)
+            self.assertEqual(json.loads(body), {"ok": False, "steam_open": True})
+            self.assertFalse(launch.called)   # nothing written, no relaunch
+            vdf, _ = app.engine.account_paths(tmp, "777")
+            m = app.engine.read_shortcuts_map(vdf)
+            names = [e["AppName"] for e in m.values() if isinstance(e, dict)]
+            self.assertNotIn("Cyber Dummy", names)
+
+    def test_collection_receives_unsigned_appid(self):
+        # the collection store wants the unsigned non-Steam appid (matching grid
+        # art); shortcuts.vdf stores the signed int32. Lock the unsigned form for
+        # an appid with the high bit set (so signed != unsigned is meaningful).
+        game = {"name": "Cyber Dummy", "exe": "C:\\Games\\CyberDummy.exe",
+                "start_dir": "C:\\Games", "launcher": "epic"}
+        appid = app.engine.game_appid(game)
+        self.assertGreaterEqual(appid, 0x80000000)   # high bit set
+        signed = appid - 0x100000000
+        seen = {}
+        with tempfile.TemporaryDirectory() as tmp:
+            make_account(tmp, "777", [])
+            srv = self.start(tmp)
+            with patch.object(app.engine, "detect_all",
+                              return_value=[{"key": "epic", "label": "Epic Games",
+                                             "games": [dict(game, appid=appid)]}]), \
+                 patch.object(app.engine.steamproc, "is_running", return_value=False), \
+                 patch.object(app.engine, "add_to_collections",
+                              side_effect=lambda path, groups: seen.update(groups=groups)):
+                code, _ = _post(srv, "/api/import",
+                                {"account": "777", "appids": [appid],
+                                 "close_steam": False, "add_to_collection": True})
+            self.assertEqual(code, 200)
+            # the unsigned form lands in the collection, never the signed one
+            self.assertEqual(seen["groups"], {"Epic Games": [appid]})
+            self.assertNotIn(signed, seen["groups"]["Epic Games"])
+            # while shortcuts.vdf got the signed form
+            vdf, _ = app.engine.account_paths(tmp, "777")
+            m = app.engine.read_shortcuts_map(vdf)
+            appids = [app.engine.get_ci(e, "appid") for e in m.values()
+                      if isinstance(e, dict)]
+            self.assertIn(signed, appids)
 
     def test_import_clears_stale_art_when_download_art_false(self):
         game = {"name": "Stale Dummy", "exe": "C:\\Games\\StaleDummy.exe",
