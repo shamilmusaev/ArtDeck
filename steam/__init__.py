@@ -28,6 +28,7 @@ from steam.verify import verify_applied, valid_image
 from steam.official import official_art, official_arts
 from steam.vdf_write import read_shortcuts_map, write_shortcuts
 from steam.shortcuts import append_shortcuts, game_appid, normalize_exe
+from steam.collections import read_collections, add_to_collections, namespace_path
 from steam.launchers import detect_all
 from steam import steamproc
 
@@ -45,6 +46,6 @@ __all__ = [
     "register_custom_image", "verify_applied", "valid_image",
     "official_art", "official_arts",
     "read_shortcuts_map", "write_shortcuts", "append_shortcuts", "game_appid",
-    "normalize_exe",
+    "normalize_exe", "read_collections", "add_to_collections", "namespace_path",
     "detect_all", "steamproc",
 ]
