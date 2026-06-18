@@ -22,3 +22,6 @@ venv/
 # IDE
 .vscode/
 .idea/
+
+# Local design docs / specs — never committed (kept local, may be in Russian)
+docs/
