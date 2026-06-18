@@ -831,6 +831,7 @@ async function doImport(){
     if(res.ok){
       toast(t("import_done").replace("%d", String(res.added)), "ok");
       if($("#import-art").checked){ runAutofill(state.account); }
+      state.activeLauncher = null; loadLaunchers();
     } else if(res.steam_running){
       // server says Steam is open; ask to close it
       const confirmed = await _confirmDialog(t("import_close_steam"));
@@ -839,6 +840,7 @@ async function doImport(){
       if(res2.ok){
         toast(t("import_done").replace("%d", String(res2.added)), "ok");
         if($("#import-art").checked){ runAutofill(state.account); }
+        state.activeLauncher = null; loadLaunchers();
       } else {
         toast(t("error")+(res2.error||"?"), "bad");
       }
