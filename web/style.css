@@ -672,7 +672,7 @@ body.sidebar-collapsed .launcher-cap{ display:none }
 .import-cards.list .imp-list-row{
   display:flex; align-items:center; gap:10px; padding:7px 8px; border-radius:10px;
   background:var(--ink-2); border:1px solid var(--line);
-  transition:border-color .13s ease, background .13s ease; cursor:pointer;
+  transition:border-color .13s ease, background .13s ease;
 }
 .import-cards.list .imp-list-row:hover{ background:var(--ink-3); border-color:var(--line-2) }
 .imp-list-thumb{
@@ -725,6 +725,28 @@ body.sidebar-collapsed .launcher-cap{ display:none }
 .qc-arrow:active{ transform:translateY(-50%) scale(.88); }
 /* while covers are loading (spinner state) disable arrow interaction */
 .qc-arrow[disabled]{ opacity:.3; pointer-events:none; }
+
+/* ---- import: "Customize" button on imported cards/rows ---- */
+.imp-customize{
+  position:absolute; bottom:32px; left:50%; transform:translateX(-50%); z-index:6;
+  padding:5px 14px; border-radius:8px; border:1px solid rgba(95,200,234,.55);
+  background:rgba(10,12,18,.82); backdrop-filter:blur(5px);
+  font-size:11.5px; font-weight:600; color:var(--coral); cursor:pointer;
+  white-space:nowrap;
+  opacity:0; transition:opacity .15s ease, background .15s ease, border-color .15s ease;
+  pointer-events:none;
+}
+.imp-cover-card:hover .imp-customize{
+  opacity:1; pointer-events:auto;
+}
+.imp-customize:hover{ background:rgba(95,200,234,.18); border-color:var(--coral); }
+.imp-customize:active{ transform:translateX(-50%) scale(.93); }
+/* list-row variant: inline, not absolute */
+.imp-list-row .imp-customize{
+  position:static; transform:none; opacity:1; pointer-events:auto;
+  padding:3px 10px; font-size:11px; margin-left:auto; flex:0 0 auto;
+}
+.imp-list-row .imp-customize:active{ transform:scale(.93); }
 
 /* saved-cue: brief mint pulse on the card border after an apply */
 @keyframes qcsaved{

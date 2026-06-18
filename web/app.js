@@ -740,13 +740,13 @@ function renderImportCards(games){
     // game name label
     c.appendChild(el("div","imp-cover-nm",escapeHtml(g.name)));
     if(g.imported){
-      // already in Steam: badge + click opens Artwork customization
+      // already in Steam: badge + explicit Customize button
       c.appendChild(el("span","imp-badge",t("imported_badge")));
-      c.style.cursor = "pointer";
-      c.title = t("imported_customize");
-      c.addEventListener("click", ()=>openInArtwork(g));
       // quick-customize: prev/next arrows that flip covers without leaving Import
       _attachQcArrows(c, w, img, g);
+      const custBtn = el("button","imp-customize",t("customize"));
+      custBtn.addEventListener("click", ev=>{ ev.stopPropagation(); openInArtwork(g); });
+      c.appendChild(custBtn);
     } else {
       // not yet imported: checkbox overlay; clicking card toggles it
       const cb = el("input"); cb.type = "checkbox"; cb.className = "imp-cb";
@@ -883,12 +883,12 @@ function renderImportList(games){
     const nm = el("span","imp-list-nm",escapeHtml(g.name));
     row.appendChild(thumb); row.appendChild(nm);
     if(g.imported){
-      // already in Steam: badge + click opens Artwork customization
+      // already in Steam: badge + explicit Customize button
       const badge = el("span","imp-badge imp-badge--list",t("imported_badge"));
       row.appendChild(badge);
-      row.style.cursor = "pointer";
-      row.title = t("imported_customize");
-      row.addEventListener("click", ()=>openInArtwork(g));
+      const custBtn = el("button","imp-customize",t("customize"));
+      custBtn.addEventListener("click", ev=>{ ev.stopPropagation(); openInArtwork(g); });
+      row.appendChild(custBtn);
     } else {
       // not yet imported: checkbox; clicking row toggles it
       const cb = el("input"); cb.type = "checkbox"; cb.className = "imp-cb imp-list-cb";
@@ -940,20 +940,21 @@ async function doImport(){
       close_steam = true;
     }
   }catch(e){ /* if endpoint missing, proceed without check */ }
+  const download_art = $("#import-art").checked;
   try{
-    const res = await jpost("/api/import", {account:state.account, appids, close_steam});
+    const res = await jpost("/api/import", {account:state.account, appids, close_steam, download_art});
     if(res.ok){
       toast(t("import_done").replace("%d", String(res.added)), "ok");
-      if($("#import-art").checked){ runAutofill(state.account); }
+      if(download_art){ runAutofill(state.account); }
       state.activeLauncher = null; loadLaunchers();
     } else if(res.steam_running){
       // server says Steam is open; ask to close it
       const confirmed = await _confirmDialog(t("import_close_steam"));
       if(!confirmed) return;
-      const res2 = await jpost("/api/import", {account:state.account, appids, close_steam:true});
+      const res2 = await jpost("/api/import", {account:state.account, appids, close_steam:true, download_art});
       if(res2.ok){
         toast(t("import_done").replace("%d", String(res2.added)), "ok");
-        if($("#import-art").checked){ runAutofill(state.account); }
+        if(download_art){ runAutofill(state.account); }
         state.activeLauncher = null; loadLaunchers();
       } else {
         toast(t("error")+(res2.error||"?"), "bad");
