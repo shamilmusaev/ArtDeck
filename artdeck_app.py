@@ -38,6 +38,10 @@ _SHORTCUTS_CACHE = {}
 # Values are either {"thumb": url} or None (no match / error).
 _LAUNCHER_COVER_CACHE = {}
 
+# Cache for /api/launcher-covers (plural) — up to 15 covers per game name.
+# Values are lists of {"thumb": url, "url": url} dicts (empty list = no results).
+_LAUNCHER_COVERS_CACHE = {}
+
 
 def _shortcuts_index(vdf):
     try:
@@ -298,6 +302,26 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if not result:
                 return self._err("none", 404)
             return self._json({"thumb": result})
+        if path == "/api/launcher-covers":
+            name = q.get("name", [None])[0]
+            if not name:
+                return self._json({"covers": []})
+            if not key:
+                return self._json({"covers": []})
+            cache_key = name.lower()
+            if cache_key not in _LAUNCHER_COVERS_CACHE:
+                try:
+                    gid, _ = engine.search_game_id(name, key)
+                    if not gid:
+                        _LAUNCHER_COVERS_CACHE[cache_key] = []
+                    else:
+                        arts = engine.list_arts(gid, "cover", key, limit=15)
+                        _LAUNCHER_COVERS_CACHE[cache_key] = [
+                            {"thumb": a["thumb"], "url": a["url"]} for a in arts
+                        ]
+                except Exception:
+                    _LAUNCHER_COVERS_CACHE[cache_key] = []
+            return self._json({"covers": _LAUNCHER_COVERS_CACHE[cache_key]})
         return self._err("unknown", 404)
 
     def _send_index(self):

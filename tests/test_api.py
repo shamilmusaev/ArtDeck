@@ -224,6 +224,50 @@ class SecurityTest(ApiBase):
             self.assertEqual(app.engine.load_api_key(None), "secret123")
 
 
+class LauncherCoversTest(ApiBase):
+    """Tests for the plural /api/launcher-covers endpoint (cover list for quick-customize)."""
+
+    def setUp(self):
+        app._LAUNCHER_COVERS_CACHE.clear()
+
+    def test_launcher_covers_returns_list(self):
+        arts = [
+            {"url": "https://cdn.sgdb.com/full1.jpg", "thumb": "https://cdn.sgdb.com/t1.jpg",
+             "width": 600, "height": 900, "style": "material", "animated": False},
+            {"url": "https://cdn.sgdb.com/full2.jpg", "thumb": "https://cdn.sgdb.com/t2.jpg",
+             "width": 600, "height": 900, "style": "material", "animated": False},
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            srv = self.start(tmp)
+            with patch.object(app.engine, "load_api_key", lambda *_: "k"), \
+                 patch.object(app.engine, "search_game_id", return_value=(42, "Some Game")), \
+                 patch.object(app.engine, "list_arts", return_value=arts):
+                code, body = _get(srv, "/api/launcher-covers?name=Some%20Game")
+        self.assertEqual(code, 200)
+        d = json.loads(body)
+        self.assertIn("covers", d)
+        self.assertEqual(len(d["covers"]), 2)
+        self.assertEqual(d["covers"][0]["thumb"], "https://cdn.sgdb.com/t1.jpg")
+        self.assertEqual(d["covers"][0]["url"], "https://cdn.sgdb.com/full1.jpg")
+
+    def test_launcher_covers_empty_when_no_match(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            srv = self.start(tmp)
+            with patch.object(app.engine, "load_api_key", lambda *_: "k"), \
+                 patch.object(app.engine, "search_game_id", return_value=(None, None)):
+                code, body = _get(srv, "/api/launcher-covers?name=NoSuchGame")
+        self.assertEqual(code, 200)
+        self.assertEqual(json.loads(body), {"covers": []})
+
+    def test_launcher_covers_empty_when_no_key(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            srv = self.start(tmp)
+            with patch.object(app.engine, "load_api_key", lambda *_: None):
+                code, body = _get(srv, "/api/launcher-covers?name=Halo")
+        self.assertEqual(code, 200)
+        self.assertEqual(json.loads(body), {"covers": []})
+
+
 class LauncherCoverTest(ApiBase):
     def setUp(self):
         # Clear the module-level cache before each test so tests are isolated.
