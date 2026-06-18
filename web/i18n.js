@@ -86,8 +86,8 @@ const I18N = {
     disclaimer: "ArtDeck не аффилирован с Valve или SteamGridDB.",
     animated_badge: "ANIM",
 
-    mode_covers: "Обложки",
-    mode_import: "Импорт",
+    mode_covers: "Оформление",
+    mode_import: "Импорт игр",
     import_launchers_section: "Лаунчеры",
     import_no_launchers: "Сторонние лаунчеры не найдены",
     import_no_games: "Нет новых игр для импорта",
@@ -95,7 +95,10 @@ const I18N = {
     import_add_btn: "Добавить %d в Steam",
     import_close_steam: "Steam запущен. Закрыть его и продолжить?",
     import_close_confirm: "Закрыть и продолжить",
-    import_done: "Добавлено игр: %d. Перезапусти Steam.",
+    import_done: "Добавлено: %d — они в твоей библиотеке Steam",
+    import_refresh: "Пересканировать лаунчеры",
+    import_view_grid: "Сетка",
+    import_view_list: "Список",
   },
 
   en: {
@@ -181,8 +184,8 @@ const I18N = {
     disclaimer: "ArtDeck is not affiliated with Valve or SteamGridDB.",
     animated_badge: "ANIM",
 
-    mode_covers: "Covers",
-    mode_import: "Import",
+    mode_covers: "Artwork",
+    mode_import: "Import games",
     import_launchers_section: "Launchers",
     import_no_launchers: "No third-party launchers found",
     import_no_games: "No new games to import",
@@ -190,7 +193,10 @@ const I18N = {
     import_add_btn: "Add %d to Steam",
     import_close_steam: "Steam is running. Close it and continue?",
     import_close_confirm: "Close & continue",
-    import_done: "Added %d games. Restart Steam to see them.",
+    import_done: "Added %d — they're in your Steam library",
+    import_refresh: "Rescan launchers",
+    import_view_grid: "Grid view",
+    import_view_list: "List view",
   },
 };
 

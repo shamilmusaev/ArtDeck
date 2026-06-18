@@ -201,13 +201,14 @@ body.sidebar-collapsed .word{display:none}
   50%{box-shadow:0 0 0 6px rgba(95,200,234,0)}
 }
 
-/* ---- mode segment: Covers / Import compact toggle ---- */
+/* ---- mode segment: Artwork / Import games compact toggle ---- */
 .mode-seg{
   display:flex; align-items:center;
-  background:var(--ink-2); border:1px solid var(--line); border-radius:10px; padding:3px; gap:2px;
+  background:var(--ink-2); border:1px solid var(--line); border-radius:10px; padding:3px; gap:3px;
 }
 .mode-opt{
-  height:30px; padding:0 12px; border-radius:7px;
+  height:32px; padding:0 13px; border-radius:7px;
+  display:inline-flex; align-items:center; gap:6px;
   font-family:var(--ui); font-weight:600; font-size:12.5px; letter-spacing:.01em;
   color:var(--dim); background:transparent; border:none; cursor:pointer; white-space:nowrap;
   transition:color .15s ease, background .15s ease;
@@ -215,6 +216,7 @@ body.sidebar-collapsed .word{display:none}
 .mode-opt:hover{ color:var(--txt); background:var(--ink-3) }
 .mode-opt.active{ color:#06242e; background:linear-gradient(135deg,var(--coral),var(--coral-2)) }
 .mode-opt.active:hover{ filter:brightness(1.05) }
+.mode-ic{ width:14px; height:14px; flex:0 0 auto; stroke-width:2.2 }
 
 /* ---- custom account dropdown (a native select can't show avatars) ---- */
 .acct{position:relative}
@@ -613,14 +615,9 @@ body.sidebar-collapsed .game .g-nm{ display:none }
   margin:0;
 }
 .import-bar{
-  flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
+  flex:0 0 auto; display:flex; align-items:center; justify-content:flex-end;
   gap:14px; padding:12px 2px 4px; border-top:1px solid var(--line);
 }
-.import-art{
-  display:flex; align-items:center; gap:8px; cursor:pointer;
-  font-size:13px; font-weight:500; color:var(--dim); user-select:none;
-}
-.import-art input{ width:15px; height:15px; flex:0 0 auto; accent-color:var(--coral) }
 
 /* ---- launcher list in the sidebar (import mode) ---- */
 .launcher-list{
@@ -639,10 +636,56 @@ body.sidebar-collapsed .game .g-nm{ display:none }
 }
 .launcher-empty{ padding:16px 10px; color:var(--faint); font-size:13px }
 .launcher-ic{
-  width:18px; height:18px; flex:0 0 auto;
+  width:20px; height:20px; flex:0 0 auto;
   display:grid; place-items:center; color:var(--dim);
 }
-.launcher-ic svg{ width:18px; height:18px; }
+.launcher-ic svg{ width:20px; height:20px; }
+/* collapsed sidebar: launcher list behaves like the game-list icon rail */
+body.sidebar-collapsed .launcher-list{ padding:4px 0 56px; align-items:center; gap:5px; scrollbar-gutter:stable both-edges }
+body.sidebar-collapsed .launcher-list::-webkit-scrollbar{ width:6px }
+body.sidebar-collapsed .launcher-row{ padding:5px; gap:0; justify-content:center }
+body.sidebar-collapsed .launcher-nm{ display:none }
+body.sidebar-collapsed .launcher-cnt{ display:none }
+body.sidebar-collapsed .launcher-cap{ display:none }
+
+/* ---- import toolbar (view toggle + scan button) ---- */
+.import-toolbar{
+  flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:0 0 10px;
+}
+.import-view-toggle{
+  display:flex; align-items:center; gap:2px;
+  background:var(--ink-2); border:1px solid var(--line); border-radius:9px; padding:2px;
+}
+.ivt-btn{
+  width:30px; height:28px; display:grid; place-items:center; border-radius:7px;
+  background:transparent; border:none; color:var(--dim); cursor:pointer; transition:.14s ease;
+}
+.ivt-btn svg{ width:15px; height:15px; }
+.ivt-btn:hover{ color:var(--txt); background:var(--ink-3) }
+.ivt-btn.active{ color:#06242e; background:linear-gradient(135deg,var(--coral),var(--coral-2)) }
+
+/* import list view modifier */
+.import-cards.list{
+  display:flex; flex-direction:column; gap:5px;
+  grid-template-columns:unset;
+}
+.import-cards.list .imp-list-row{
+  display:flex; align-items:center; gap:10px; padding:7px 8px; border-radius:10px;
+  background:var(--ink-2); border:1px solid var(--line);
+  transition:border-color .13s ease, background .13s ease; cursor:pointer;
+}
+.import-cards.list .imp-list-row:hover{ background:var(--ink-3); border-color:var(--line-2) }
+.imp-list-thumb{
+  width:34px; height:50px; flex:0 0 auto; border-radius:6px; overflow:hidden;
+  background:var(--ink-3); border:1px solid var(--line); display:grid; place-items:center; color:var(--faint);
+}
+.imp-list-thumb img{ width:100%; height:100%; object-fit:cover; display:block }
+.imp-list-thumb svg{ width:16px; height:16px }
+.imp-list-nm{ flex:1; min-width:0; font-size:13.5px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.imp-list-cb{ flex:0 0 auto; width:16px; height:16px; accent-color:var(--coral); cursor:pointer }
+
+/* import-art toggle: accent when checked */
+.import-art-toggle input:checked ~ .anim-lbl{ color:var(--txt) }
 
 /* =========================== LIGHTBOX =========================== */
 .light{position:fixed; inset:0; z-index:80; display:grid; place-items:center; padding:32px;
