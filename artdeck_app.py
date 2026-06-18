@@ -35,8 +35,10 @@ STEAM = engine.find_steam_path(None)
 _SHORTCUTS_CACHE = {}
 
 # Cache for /api/launcher-cover results, keyed by lowercased game name.
-# Values are either {"thumb": url} or None (no match / error).
+# Values are either a thumb url or None (no match / error). Bounded so a long
+# session over large libraries cannot grow it without limit.
 _LAUNCHER_COVER_CACHE = {}
+_LAUNCHER_COVER_CACHE_MAX = 1024
 
 # Last /api/launchers scan per account, so /api/import operates on exactly what
 # the UI showed instead of re-running the full launcher detection (which both
@@ -301,6 +303,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self._err("no key", 404)
             cache_key = name.lower()
             if cache_key not in _LAUNCHER_COVER_CACHE:
+                if len(_LAUNCHER_COVER_CACHE) >= _LAUNCHER_COVER_CACHE_MAX:
+                    _LAUNCHER_COVER_CACHE.clear()
                 try:
                     gid, _ = engine.search_game_id(name, key)
                     if not gid:

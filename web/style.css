@@ -593,10 +593,6 @@ body.sidebar-collapsed .game .g-nm{ display:none }
   padding:24px; text-align:center; color:var(--faint); font-size:13.5px;
   grid-column:1/-1;
 }
-/* keep legacy imp-card/imp-cb/imp-ic/imp-nm styles for stale references */
-.imp-cb{
-  width:16px; height:16px; flex:0 0 auto; accent-color:var(--coral); cursor:pointer;
-}
 .imp-cover-nm{
   position:absolute; left:0; right:0; bottom:0; z-index:3;
   padding:18px 9px 8px; font-size:11.5px; font-weight:600; color:var(--txt);
