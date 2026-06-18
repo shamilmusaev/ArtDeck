@@ -686,10 +686,10 @@ function renderLaunchers(){
     row.addEventListener("click", ()=>selectLauncher(lau));
     lb.appendChild(row);
   });
-  // auto-select first launcher
-  if(state.launchers.length && !state.activeLauncher){
-    selectLauncher(state.launchers[0]);
-  }
+  // always render a launcher's games so the skeletons get replaced — re-select
+  // the previously active launcher if it still exists, else fall back to the first
+  const target = state.launchers.find(l=>l.key===state.activeLauncher) || state.launchers[0];
+  if(target) selectLauncher(target);
 }
 
 async function refreshLaunchers(){
