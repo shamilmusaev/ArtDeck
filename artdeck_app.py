@@ -276,6 +276,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
                             for g in shortcuts if g.get("exe")}
             return self._json({"launchers": engine.detect_all(
                 imported_appids=imported_appids, exe_to_appid=exe_to_appid)})
+        if path == "/api/collections":
+            # existing collection names, to suggest in the import dialog (read-only)
+            acc = q.get("account", [None])[0]
+            if not (acc and STEAM and str(acc).isdigit()):
+                return self._json({"names": []})
+            ns = engine.namespace_path(STEAM, acc)
+            names = sorted({c.get("name") for c in engine.read_collections(ns).values()
+                            if isinstance(c.get("name"), str)})
+            return self._json({"names": names})
         if path == "/api/launcher-cover":
             name = q.get("name", [None])[0]
             if not name:
@@ -513,19 +522,28 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     return self._err("bad appids", 400)
                 close_steam = bool(data.get("close_steam"))
                 download_art = bool(data.get("download_art", True))
+                add_to_collection = bool(data.get("add_to_collection"))
+                collection_name = (data.get("collection_name") or "").strip()
                 if not (uid and STEAM and appids):
                     return self._err("bad", 400)
                 running = engine.steamproc.is_running()
                 if running and not close_steam:
                     return self._json({"ok": False, "steam_running": True})
-                # collect the chosen detected games by appid
+                # collect the chosen detected games by appid, grouped by launcher
                 chosen = []
+                groups = {}
                 for grp in engine.detect_all():
                     for g in grp["games"]:
                         if g["appid"] in appids:
                             chosen.append(g)
+                            groups.setdefault(grp["label"], []).append(g["appid"])
+                # an explicit name puts every chosen game in that one collection;
+                # otherwise each launcher gets its own (named after the launcher)
+                if collection_name:
+                    groups = {collection_name: [g["appid"] for g in chosen]}
                 if running:
                     engine.steamproc.shutdown(STEAM)
+                collections = None
                 try:
                     vdf, grid = engine.account_paths(STEAM, uid)
                     m = engine.read_shortcuts_map(vdf)
@@ -536,10 +554,18 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         for g in chosen:
                             for art_type in engine.ART_TYPES:
                                 engine.revert_art(grid, g["appid"], art_type)
+                    if add_to_collection and groups:
+                        # Steam is closed here, so the surgical collections write
+                        # survives; relaunch happens after in finally.
+                        ns = engine.namespace_path(STEAM, uid)
+                        collections = engine.add_to_collections(ns, groups)
                 finally:
                     if running:
                         engine.steamproc.launch(STEAM)
-                return self._json({"ok": True, "added": added, "relaunched": running})
+                # surface what actually changed so the UI does not imply a
+                # collection update that silently did not happen
+                return self._json({"ok": True, "added": added, "relaunched": running,
+                                   "collections": collections})
             return self._err("unknown", 404)
         except Exception:
             return self._err("server error", 500)   # generic: don't leak paths/stack

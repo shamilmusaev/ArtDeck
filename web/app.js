@@ -890,34 +890,87 @@ function _updateImportAddLabel(){
 async function doImport(){
   const appids = _checkedImportAppids();
   if(!appids.length) return;
-  let close_steam = false;
+  // gather what the summary dialog needs: is Steam open, and the user's existing
+  // collection names (to suggest in the datalist). Both degrade to safe defaults.
+  let running = false;
+  try{ const sr = await jget("/api/steam-running"); running = !!sr.running; }
+  catch(e){ /* endpoint missing: assume closed, server still guards */ }
+  let names = [];
+  try{ const r = await jget("/api/collections?account="+enc(state.account)); names = r.names || []; }
+  catch(e){ /* no suggestions, not fatal */ }
+  const opts = await _importDialog(appids.length, running, names);
+  if(!opts) return;  // cancelled
+  await _runImport(appids, opts);
+}
+
+// label of the launcher currently shown in the import view (default collection name)
+function _activeLauncherLabel(){
+  const l = (state.launchers || []).find(x=>x.key === state.activeLauncher);
+  return l ? l.label : "";
+}
+
+// summary dialog shown before import: explains the collection and lets the user
+// confirm/rename it. Resolves {close_steam, add_to_collection, collection_name} or
+// null when cancelled.
+function _importDialog(n, running, names){
+  return new Promise(resolve=>{
+    const pref = localStorage.getItem("artdeck.addcollection");
+    const addOn = pref === null ? true : pref === "1";
+    const defName = _activeLauncherLabel();
+    const opts = names.map(nm=>`<option value="${escapeHtml(nm)}">`).join("");
+    const body =
+      `<label class="anim-toggle dlg-coll-toggle">
+         <input type="checkbox" id="dlg-add-collection"${addOn?" checked":""}>
+         <span class="sw"></span>
+         <span class="anim-lbl">${escapeHtml(t("import_dialog_collection"))}</span>
+       </label>
+       <div class="dlg-field" id="dlg-coll-field">
+         <input type="text" id="dlg-collection-name" list="dlg-coll-names"
+                value="${escapeHtml(defName)}"
+                placeholder="${escapeHtml(t("import_collection_name_label"))}" autocomplete="off">
+         <datalist id="dlg-coll-names">${opts}</datalist>
+         <div class="dlg-hint">${escapeHtml(t("import_collection_hint"))}</div>
+       </div>`
+      + (running ? `<div class="dlg-note">${escapeHtml(t("import_steam_will_restart"))}</div>` : "");
+    modal(t("import_dialog_title").replace("%d", String(n)), body,
+      [{x:t("cancel"), cls:"ghost", fn:()=>{ closeModal(); resolve(null); }},
+       {x:t("import_confirm"), cls:"primary", fn:()=>{
+          const add_to_collection = $("#dlg-add-collection").checked;
+          const collection_name = add_to_collection ? $("#dlg-collection-name").value.trim() : "";
+          localStorage.setItem("artdeck.addcollection", add_to_collection ? "1" : "0");
+          closeModal();
+          resolve({close_steam: running, add_to_collection, collection_name});
+       }}]);
+    // grey out the name field while the toggle is off
+    const cb = $("#dlg-add-collection"), fld = $("#dlg-coll-field");
+    const sync = ()=>{ fld.classList.toggle("off", !cb.checked); $("#dlg-collection-name").disabled = !cb.checked; };
+    cb.addEventListener("change", sync); sync();
+  });
+}
+
+async function _runImport(appids, opts){
+  const body = {account:state.account, appids,
+                close_steam:opts.close_steam,
+                download_art:$("#import-art").checked,
+                add_to_collection:opts.add_to_collection,
+                collection_name:opts.collection_name};
   try{
-    const sr = await jget("/api/steam-running");
-    if(sr.running){
+    let res = await jpost("/api/import", body);
+    if(!res.ok && res.steam_running){
+      // running check missed it; warn and retry closing Steam
       const confirmed = await _confirmDialog(t("import_close_steam"));
       if(!confirmed) return;
-      close_steam = true;
+      res = await jpost("/api/import", Object.assign({}, body, {close_steam:true}));
     }
-  }catch(e){ /* if endpoint missing, proceed without check */ }
-  const download_art = $("#import-art").checked;
-  try{
-    const res = await jpost("/api/import", {account:state.account, appids, close_steam, download_art});
     if(res.ok){
       toast(t("import_done").replace("%d", String(res.added)), "ok");
-      if(download_art){ runAutofill(state.account); }
-      state.activeLauncher = null; loadLaunchers();
-    } else if(res.steam_running){
-      // server says Steam is open; ask to close it
-      const confirmed = await _confirmDialog(t("import_close_steam"));
-      if(!confirmed) return;
-      const res2 = await jpost("/api/import", {account:state.account, appids, close_steam:true, download_art});
-      if(res2.ok){
-        toast(t("import_done").replace("%d", String(res2.added)), "ok");
-        if(download_art){ runAutofill(state.account); }
-        state.activeLauncher = null; loadLaunchers();
-      } else {
-        toast(t("error")+(res2.error||"?"), "bad");
+      // confirm the collection result only when something actually landed there
+      const c = res.collections;
+      if(c && c.names && c.names.length && c.added){
+        toast(t("import_collection_done").replace("%s", c.names.join(", ")), "ok");
       }
+      if($("#import-art").checked){ runAutofill(state.account); }
+      state.activeLauncher = null; loadLaunchers();
     } else {
       toast(t("error")+(res.error||"?"), "bad");
     }

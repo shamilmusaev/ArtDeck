@@ -176,7 +176,8 @@ class ImportTest(ApiBase):
                                    {"account": "777", "appids": [appid], "close_steam": False})
             self.assertEqual(code, 200)
             d = json.loads(body)
-            self.assertEqual(d, {"ok": True, "added": 1, "relaunched": False})
+            self.assertEqual(d, {"ok": True, "added": 1, "relaunched": False,
+                                 "collections": None})
             vdf, _ = app.engine.account_paths(tmp, "777")
             m = app.engine.read_shortcuts_map(vdf)
             names = [e["AppName"] for e in m.values() if isinstance(e, dict)]
@@ -231,6 +232,91 @@ class ImportTest(ApiBase):
             self.assertTrue(json.loads(body)["ok"])
             # art file must still be present (download_art=true leaves it untouched)
             self.assertTrue(os.path.isfile(cover_file))
+
+    def test_import_adds_to_collection(self):
+        game = {"name": "Cyber Dummy", "exe": "C:\\Games\\CyberDummy.exe",
+                "start_dir": "C:\\Games", "launcher": "epic"}
+        appid = app.engine.game_appid(game)
+        seen = {}
+        with tempfile.TemporaryDirectory() as tmp:
+            make_account(tmp, "777", [])
+            srv = self.start(tmp)
+            with patch.object(app.engine, "detect_all",
+                              return_value=[{"key": "epic", "label": "Epic Games",
+                                             "games": [dict(game, appid=appid)]}]), \
+                 patch.object(app.engine.steamproc, "is_running", return_value=False), \
+                 patch.object(app.engine, "add_to_collections",
+                              side_effect=lambda path, groups: (seen.update(groups=groups)
+                                  or {"names": ["Epic Games"], "added": 1})):
+                code, body = _post(srv, "/api/import",
+                                   {"account": "777", "appids": [appid],
+                                    "close_steam": False, "add_to_collection": True})
+            self.assertEqual(code, 200)
+            self.assertEqual(seen["groups"], {"Epic Games": [appid]})
+            # the collections summary is surfaced in the response
+            self.assertEqual(json.loads(body)["collections"], {"names": ["Epic Games"], "added": 1})
+
+    def test_import_skips_collection_when_off(self):
+        game = {"name": "Cyber Dummy", "exe": "C:\\Games\\CyberDummy.exe",
+                "start_dir": "C:\\Games", "launcher": "epic"}
+        appid = app.engine.game_appid(game)
+        calls = []
+        with tempfile.TemporaryDirectory() as tmp:
+            make_account(tmp, "777", [])
+            srv = self.start(tmp)
+            with patch.object(app.engine, "detect_all",
+                              return_value=[{"key": "epic", "label": "Epic Games",
+                                             "games": [dict(game, appid=appid)]}]), \
+                 patch.object(app.engine.steamproc, "is_running", return_value=False), \
+                 patch.object(app.engine, "add_to_collections",
+                              side_effect=lambda *a, **k: calls.append(a)):
+                code, body = _post(srv, "/api/import",
+                                   {"account": "777", "appids": [appid],
+                                    "close_steam": False, "add_to_collection": False})
+            self.assertEqual(code, 200)
+            self.assertEqual(calls, [])
+
+    def test_import_custom_collection_name(self):
+        game = {"name": "Cyber Dummy", "exe": "C:\\Games\\CyberDummy.exe",
+                "start_dir": "C:\\Games", "launcher": "epic"}
+        appid = app.engine.game_appid(game)
+        seen = {}
+        with tempfile.TemporaryDirectory() as tmp:
+            make_account(tmp, "777", [])
+            srv = self.start(tmp)
+            with patch.object(app.engine, "detect_all",
+                              return_value=[{"key": "epic", "label": "Epic Games",
+                                             "games": [dict(game, appid=appid)]}]), \
+                 patch.object(app.engine.steamproc, "is_running", return_value=False), \
+                 patch.object(app.engine, "add_to_collections",
+                              side_effect=lambda path, groups: seen.update(groups=groups)):
+                code, body = _post(srv, "/api/import",
+                                   {"account": "777", "appids": [appid],
+                                    "close_steam": False, "add_to_collection": True,
+                                    "collection_name": "My Games"})
+            self.assertEqual(code, 200)
+            # an explicit name overrides per-launcher grouping
+            self.assertEqual(seen["groups"], {"My Games": [appid]})
+
+    def test_collections_endpoint(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            make_account(tmp, "777", [])
+            ns_dir = os.path.join(tmp, "userdata", "777", "config", "cloudstorage")
+            os.makedirs(ns_dir, exist_ok=True)
+            arr = [["user-collections.uc-aaaaaaaaaaaa",
+                    {"key": "user-collections.uc-aaaaaaaaaaaa",
+                     "value": json.dumps({"id": "uc-aaaaaaaaaaaa", "name": "Epic Games",
+                                           "added": [1], "removed": []})}]]
+            write_file(os.path.join(ns_dir, "cloud-storage-namespace-1.json"),
+                       json.dumps(arr))
+            srv = self.start(tmp)
+            code, body = _get(srv, "/api/collections?account=777")
+            self.assertEqual(code, 200)
+            self.assertEqual(json.loads(body), {"names": ["Epic Games"]})
+            # bad / missing account degrades to an empty list, never errors
+            self.assertEqual(json.loads(_get(srv, "/api/collections?account=bad")[1]),
+                             {"names": []})
+            self.assertEqual(json.loads(_get(srv, "/api/collections")[1]), {"names": []})
 
 
 class SecurityTest(ApiBase):

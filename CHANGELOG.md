@@ -6,6 +6,15 @@ All notable changes to ArtDeck are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- Imported launcher games can be dropped into a Steam library collection. A
+  summary dialog before import spells out what will happen and lets you confirm or
+  rename the target collection (default: the launcher name, e.g. "Epic Games"), or
+  pick an existing one (suggested from your current collections). Collections are
+  written surgically into the client's `cloud-storage-namespace-1.json` while Steam
+  is closed, leaving every other entry untouched and backing up to `.bak`.
+
 ### Fixed
 
 - Non-Steam game icons now show in the sidebar. They are resolved from the Steam
